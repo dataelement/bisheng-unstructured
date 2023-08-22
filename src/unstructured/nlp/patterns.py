@@ -138,3 +138,8 @@ JSON_PATTERN = r"(?s)\{(?=.*:).*?(?:\}|$)|\[(?s:.*?)\](?:$|,|\])"
 
 # taken from https://stackoverflow.com/a/3845829/12406158
 VALID_JSON_CHARACTERS = r"[,:{}\[\]0-9.\-+Eaeflnr-u \n\r\t]"
+
+
+# For zh variables
+ZH_PUNC_NOT_IN_TITLE_PATTERN = r"[，。、；！|,;!]"
+ZH_PUNC_NOT_IN_TITLE_RE = re.compile(ZH_PUNC_NOT_IN_TITLE_PATTERN)

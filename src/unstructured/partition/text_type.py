@@ -18,6 +18,7 @@ from unstructured.nlp.patterns import (
     UNICODE_BULLETS_RE,
     US_CITY_STATE_ZIP_RE,
     US_PHONE_NUMBERS_RE,
+    ZH_PUNC_NOT_IN_TITLE_RE,
 )
 from unstructured.nlp.tokenize import pos_tag, sent_tokenize, word_tokenize
 
@@ -124,6 +125,20 @@ def is_possible_title(
     if len(text) == 0:
         trace_logger.detail("Not a title. Text is empty.")  # type: ignore
         return False
+
+    if language == 'zh':
+        if ZH_PUNC_NOT_IN_TITLE_RE.search(text) is not None:
+            return False
+
+        title_max_word_length = int(
+            os.environ.get("UNSTRUCTURED_TITLE_MAX_WORD_LENGTH", title_max_word_length),
+        )
+
+        if len(text) > title_max_word_length:
+            return False
+
+        return True
+
 
     if text.isupper() and ENDS_IN_PUNCT_RE.search(text) is not None:
         return False

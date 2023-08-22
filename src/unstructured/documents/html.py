@@ -8,7 +8,9 @@ if sys.version_info < (3, 8):
 else:
     from typing import Final
 
-from lxml import etree
+import numpy as np
+
+
 
 from unstructured.cleaners.core import clean_bullets, replace_unicode_quotes
 from unstructured.documents.base import Page
@@ -21,6 +23,8 @@ from unstructured.documents.elements import (
     NarrativeText,
     Text,
     Title,
+    Table,
+    ElementMetadata
 )
 from unstructured.documents.xml import VALID_PARSERS, XMLDocument
 from unstructured.logger import logger
@@ -39,6 +43,71 @@ TABLE_TAGS: Final[List[str]] = ["table", "tbody", "td", "tr"]
 PAGEBREAK_TAGS: Final[List[str]] = ["hr"]
 HEADER_OR_FOOTER_TAGS: Final[List[str]] = ["header", "footer"]
 EMPTY_TAGS: Final[List[str]] = ["br", "hr"]
+
+import re
+RE_MULTISPACE_INCLUDING_NEWLINES = re.compile(pattern=r"\s+", flags=re.DOTALL)
+
+from lxml.html.clean import Cleaner
+import lxml
+from lxml import etree
+
+
+def norm_text(e):
+    return re.sub(RE_MULTISPACE_INCLUDING_NEWLINES, ' ', str(e) or "").strip()
+
+
+def markdown_table(rows):
+    def _format_row(r):
+        content = ' | '.join(r)
+        content = '| ' + content + ' |'
+        return content
+
+    def _format_header(n):
+        r = ['---'] * n
+        content = ' | '.join(r)
+        content = '| ' + content + ' |'
+        return content
+
+    if not rows: return ''
+    r0 = rows[0]
+    max_cols = max(map(len, rows))
+    first_cols = len(r0)
+
+    content = [_format_row(r0)]
+    content.append(_format_header(first_cols))
+    for r in rows[1:]:
+        content.append(_format_row(r))
+
+    return '\n'.join(content)
+
+
+def parse_table_element(table_node, field_sep = ' '):
+    rows = []
+    for tr in table_node.xpath('.//tr'):
+        row = []
+        for e in tr.getchildren():
+            texts = tuple(e.xpath('.//text()'))
+            texts = map(norm_text, texts)
+            texts = [t for t in texts if t]
+            field_text = field_sep.join(texts)
+            if field_text: row.append(field_text)
+
+        if row: rows.append(row)
+
+    table_html = etree.tostring(table_node)
+
+    cleaner = Cleaner(
+        remove_unknown_tags=False,
+        allow_tags=[
+            "table", "tbody", "td", "tr", 'th',
+        ],
+        style=True,
+        page_structure=False)
+    clean_table_html = cleaner.clean_html(table_html).decode()
+    text = markdown_table(rows)
+
+    metadata = ElementMetadata(text_as_html=clean_table_html)
+    return Table(text=text, metadata=metadata)
 
 
 class TagsMixin:
@@ -112,6 +181,19 @@ class HTMLDocument(XMLDocument):
         self.assembled_articles = assemble_articles
         super().__init__(stylesheet=stylesheet, parser=parser)
 
+        self.cleaner = Cleaner(
+            remove_unknown_tags=False,
+            allow_tags=[
+                'div', 'main', 'article', 'figcaption',
+                'header', 'footer',
+                'p', 'br', 'b', "span", "font",
+                "li", "dd",
+                "h1", "h2", "h3", "h4", "h5", "h6",
+                "table", "tbody", "td", "tr", 'th',
+            ],
+            style=True,
+            page_structure=False)
+
     def _read(self) -> List[Page]:
         """Reads and structures and HTML document. If present, looks for article tags.
         if there are multiple article sections present, a page break is inserted between them.
@@ -123,70 +205,72 @@ class HTMLDocument(XMLDocument):
         etree.strip_elements(self.document_tree, ["script"])
         root = _find_main(self.document_tree)
         
-        from lxml.html.clean import Cleaner
-        import lxml
-
-        print('self.document_tree', type(self.document_tree))
         content = etree.tostring(root, pretty_print=True)
-        print('---content---')
-        for e in root:
-            print(type(e), type(e))
-            print(e.text_content())
-            print('>>' * 10)
-        print('---end content---')
+        clean_html = self.cleaner.clean_html(content).decode()
+        doc_tree = lxml.html.fromstring(clean_html)
+        root = _find_main(doc_tree)
 
-        cleaner = Cleaner(
-            # remove_unknown_tags=False,
-            remove_tags=['div'],
-            allow_tags=[
-                'article',
-                'p', 'br', 'b',
-                "li", "dd",
-                "h1", "h2", "h3", "h4", "h5", "h6",
-                "table", "tbody", "td", "tr"
-            ],
-            style=True,
-            page_structure=False)
-
-        print(cleaner.clean_html(content).decode())
-
-        root = lxml.html.fromstring(cleaner.clean_html(content).decode())
-        # root.strip_elements(self.document_tree, ["div"])
-        print('---div--')
-        print(root.findall('div'))
-
-        ## .drop_tag()
-
-        print('---self.assembled_articles:', self.assembled_articles)
+        language = 'zh'
         articles = _find_articles(root, assemble_articles=True)
         page_number = 0
         page = Page(number=page_number)
-        print('###' * 10)
-        
         for article in articles:
-            print('---article---')
-            print(article.text_content())
-
             descendanttag_elems: Tuple[etree.Element, ...] = ()
             for tag_elem in article.iter():
-                print('tag_elem', tag_elem, descendanttag_elems)
                 if tag_elem in descendanttag_elems:
                     # Prevent repeating something that's been flagged as text as we chase it
                     # down a chain
                     continue
 
-                if _is_text_tag(tag_elem):
-                    element = _parse_tag(tag_elem)
+                if tag_elem.tag == 'table':
+                    tables = []
+                    emb_table = tag_elem.xpath('.//table')
+
+                    filtered_table = []
+                    groups = [tuple(e.iterdescendants()) for e in emb_table]
+                    n = len(groups)
+                    inds = list(range(n))                    
+                    inds = sorted(inds, key=lambda i: len(groups[i]))
+                    overlap = np.zeros((n, n))
+                    for i in range(n):
+                        for j in range(i + 1, n):
+                            ind_j, ind_i = inds[j], inds[i]
+                            g_j, g_i = groups[ind_j], groups[ind_i]
+                            b = np.all([n in g_j for n in g_i])
+                            if b:
+                                overlap[i, j] = b
+                                break
+
+                    for i in range(n):
+                        if np.sum(overlap[i, :]) == 0:
+                            filtered_table.append(emb_table[inds[i]])
+
+                    emb_table = filtered_table if filtered_table else [tag_elem]
+                    for node in emb_table:
+                        element = parse_table_element(node)
+                        page.elements.append(element) 
+              
+                    descendanttag_elems = tuple(tag_elem.iterdescendants())
+
+                elif _is_text_tag(tag_elem):
+                    element = _parse_tag(tag_elem, language)
                     if element is not None:
+                        element.text = norm_text(element.text)
                         page.elements.append(element)
                         descendanttag_elems = tuple(tag_elem.iterdescendants())
+
+                        # print('text tag', element.tag, str(element), element.to_dict())
 
                 elif _is_container_with_text(tag_elem):
                     links = _get_links_from_tag(tag_elem)
                     emphasized_texts = _get_emphasized_texts_from_tag(tag_elem)
-                    element = _text_to_element(tag_elem.text, "div", (), links, emphasized_texts)
+                    element = _text_to_element(
+                        tag_elem.text, "div", (), links, emphasized_texts, 
+                        language=language)
                     if element is not None:
                         page.elements.append(element)
+
+                        # print('container text tag', element.tag, str(element).strip())
 
                 elif _is_bulleted_table(tag_elem):
                     bulleted_text = _bulleted_text_from_table(tag_elem)
@@ -198,6 +282,8 @@ class HTMLDocument(XMLDocument):
                     if element is not None:
                         page.elements.append(element)
                         descendanttag_elems = _get_bullet_descendants(tag_elem, next_element)
+
+                        # print('list item tag', element.tag, str(element).strip())
 
                 elif tag_elem.tag in PAGEBREAK_TAGS and len(page.elements) > 0:
                     pages.append(page)
@@ -366,6 +452,7 @@ def _get_emphasized_texts_from_tag(tag_elem: etree.Element) -> List[dict]:
 
 def _parse_tag(
     tag_elem: etree.Element,
+    language='en',
 ) -> Optional[Element]:
     """Converts an etree element to a Text element if there is applicable text in the element.
     Ancestor tags are kept so they can be used for filtering or classification without
@@ -386,6 +473,7 @@ def _parse_tag(
         ancestortags,
         links=links,
         emphasized_texts=emphasized_texts,
+        language=language,
     )
 
 
@@ -395,6 +483,7 @@ def _text_to_element(
     ancestortags: Tuple[str, ...],
     links: List[Link] = [],
     emphasized_texts: List[dict] = [],
+    language='en'
 ) -> Optional[Element]:
     """Given the text of an element, the tag type and the ancestor tags, produces the appropriate
     HTML element."""
@@ -429,7 +518,7 @@ def _text_to_element(
             links=links,
             emphasized_texts=emphasized_texts,
         )
-    elif is_possible_title(text):
+    elif is_possible_title(text, language=language):
         return HTMLTitle(
             text,
             tag=tag,
