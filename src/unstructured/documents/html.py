@@ -268,6 +268,7 @@ class HTMLDocument(XMLDocument):
                         tag_elem.text, "div", (), links, emphasized_texts, 
                         language=language)
                     if element is not None:
+                        element.text = norm_text(element.text)
                         page.elements.append(element)
 
                         # print('container text tag', element.tag, str(element).strip())
