@@ -15,7 +15,7 @@ Bisheng-unstructured makes the unstructured data porcessing more easily and prov
 
 ### Start with DataElem Services.
 
-We provide a open cloud service for easily use. See [free trial][https://m7a7tqsztt.feishu.cn/wiki/CTXNwpqGKiMs5FkKlPJcylfonuD].
+We provide a open cloud service for easily use. See [free trial](https://m7a7tqsztt.feishu.cn/wiki/CTXNwpqGKiMs5FkKlPJcylfonuD).
 
 
 ### Install bisheng-unstructured
