@@ -1,5 +1,5 @@
-from unstructured.partition.image import partition_image
-from unstructured.documents.markdown import (
+from bisheng_unstructured.partition.image import partition_image
+from bisheng_unstructured.documents.markdown import (
   transform_html_table_to_md,
   merge_html_tables)
 
@@ -42,12 +42,18 @@ def test3():
 def test4():
   html_text = """
 <table>
-  <thead><th>Dataset</th><th></th><th>Base Model|Large Model|Notes</th><th></th></thead>
-  <tr><td>PubLayNet[38]</td><td>F/M</td><td>M</td><td>Layouts of modern scientific documents</td></tr>
-  <tr><td>PRImA [3]</td><td>M</td><td>:</td><td>Layouts of scanned modern magaxines and sciertific reports</td></tr>
-  <tr><td></td><td>AA</td><td></td><td>Layouts of scanned US newspapers from the 20th century</td></tr>
-  <tr><td>TableBank[18]</td><td></td><td></td><td>Table region on modern scientific and business document</td></tr>
-  <tr><td>HJDataset [31]</td><td>F/M</td><td></td><td>Layouts of history Japanese documents</td></tr>
+  <thead><th>Dataset</th><th></th><th>Base Model|Large Model|Notes</th>
+  <th></th></thead>
+  <tr><td>PubLayNet[38]</td><td>F/M</td><td>M</td>
+      <td>Layouts of modern scientific documents</td></tr>
+  <tr><td>PRImA [3]</td><td>M</td><td>:</td>
+      <td>Layouts of scanned modern magaxines and sciertific reports</td></tr>
+  <tr><td></td><td>AA</td><td></td>
+      <td>Layouts of scanned US newspapers from the 20th century</td></tr>
+  <tr><td>TableBank[18]</td><td></td><td></td>
+      <td>Table region on modern scientific and business document</td></tr>
+  <tr><td>HJDataset [31]</td><td>F/M</td><td></td>
+      <td>Layouts of history Japanese documents</td></tr>
 </table>
   """
 
@@ -58,23 +64,35 @@ def test4():
 def test5():
   html_text1 = """
 <table>
-  <thead><th>Dataset</th><th></th><th>Base Model|Large Model|Notes</th><th></th></thead>
-  <tr><td>PubLayNet[38]</td><td>F/M</td><td>M</td><td>Layouts of modern scientific documents</td></tr>
-  <tr><td>PRImA [3]</td><td>M</td><td>:</td><td>Layouts of scanned modern magaxines and sciertific reports</td></tr>
-  <tr><td></td><td>AA</td><td></td><td>Layouts of scanned US newspapers from the 20th century</td></tr>
-  <tr><td>TableBank[18]</td><td></td><td></td><td>Table region on modern scientific and business document</td></tr>
-  <tr><td>HJDataset [31]</td><td>F/M</td><td></td><td>Layouts of history Japanese documents</td></tr>
+  <thead><th>Dataset</th><th></th><th>Base Model|Large Model|Notes</th>
+  <th></th></thead>
+  <tr><td>PubLayNet[38]</td><td>F/M</td><td>M</td>
+      <td>Layouts of modern scientific documents</td></tr>
+  <tr><td>PRImA [3]</td><td>M</td><td>:</td>
+      <td>Layouts of scanned modern magaxines and sciertific reports</td></tr>
+  <tr><td></td><td>AA</td><td></td>
+      <td>Layouts of scanned US newspapers from the 20th century</td></tr>
+  <tr><td>TableBank[18]</td><td></td><td></td>
+      <td>Table region on modern scientific and business document</td></tr>
+  <tr><td>HJDataset [31]</td><td>F/M</td><td></td>
+      <td>Layouts of history Japanese documents</td></tr>
 </table>
   """
 
   html_text2 = """
 <table>
-  <thead><th>Dataset</th><th></th><th>Base Model|Large Model|Notes</th><th></th></thead>
-  <tr><td>PubLayNet[38]</td><td>F/M</td><td>M</td><td>Layouts of modern scientific documents</td></tr>
-  <tr><td>PRImA [3]</td><td>M</td><td>:</td><td>Layouts of scanned modern magaxines and sciertific reports</td></tr>
-  <tr><td></td><td>AA</td><td></td><td>Layouts of scanned US newspapers from the 20th century</td></tr>
-  <tr><td>TableBank[18]</td><td></td><td></td><td>Table region on modern scientific and business document</td></tr>
-  <tr><td>HJDataset [31]</td><td>F/M</td><td></td><td>Layouts of history Japanese documents</td></tr>
+  <thead><th>Dataset</th><th></th><th>Base Model|Large Model|Notes</th>
+  <th></th></thead>
+  <tr><td>PubLayNet[38]</td><td>F/M</td><td>M</td>
+      <td>Layouts of modern scientific documents</td></tr>
+  <tr><td>PRImA [3]</td><td>M</td><td>:</td>
+      <td>Layouts of scanned modern magaxines and sciertific reports</td></tr>
+  <tr><td></td><td>AA</td><td></td>
+      <td>Layouts of scanned US newspapers from the 20th century</td></tr>
+  <tr><td>TableBank[18]</td><td></td><td></td>
+      <td>Table region on modern scientific and business document</td></tr>
+  <tr><td>HJDataset [31]</td><td>F/M</td><td></td>
+      <td>Layouts of history Japanese documents</td></tr>
 </table>
   """
 

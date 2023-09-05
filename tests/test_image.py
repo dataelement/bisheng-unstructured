@@ -1,5 +1,5 @@
-from unstructured.documents.pdf_parser.image import ImageDocument
-from unstructured.documents.html_utils import visualize_html, save_to_txt
+from bisheng_unstructured.documents.pdf_parser.image import ImageDocument
+from bisheng_unstructured.documents.html_utils import visualize_html, save_to_txt
 
 TEST_RT_URL = 'http://192.168.106.12:9001/v2.1/models/'
 

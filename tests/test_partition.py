@@ -1,5 +1,5 @@
-from unstructured.partition.html import partition_html
-from unstructured.documents.html_utils import visualize_html, save_to_txt
+from bisheng_unstructured.partition.html import partition_html
+from bisheng_unstructured.documents.html_utils import visualize_html, save_to_txt
 
 
 def test_html1():

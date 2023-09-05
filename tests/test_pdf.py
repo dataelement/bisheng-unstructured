@@ -1,5 +1,5 @@
-from unstructured.partition.pdf import partition_pdf
-from unstructured.documents.html_utils import visualize_html, save_to_txt
+from bisheng_unstructured.partition.pdf import partition_pdf
+from bisheng_unstructured.documents.html_utils import visualize_html, save_to_txt
 
 
 def test1():

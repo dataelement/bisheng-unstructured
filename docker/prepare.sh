@@ -1,7 +1,7 @@
 #!/bin/bash
 
 function start_docker() {
-  docker run --gpus=all --shm-size 2g --net=host -itd --name bisheng_unstr_dev1 \
+  docker run --net=host -itd --name bisheng_unstr_dev1 \
    -v /home/hanfeng:/home/hanfeng -v /home/public:/home/public ubuntu:20.04 bash
 }
 

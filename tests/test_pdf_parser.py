@@ -1,7 +1,8 @@
-from unstructured.documents.pdf_parser.pdf import PDFDocument
-from unstructured.documents.html_utils import visualize_html, save_to_txt
+from bisheng_unstructured.documents.pdf_parser.pdf import PDFDocument
+from bisheng_unstructured.documents.html_utils import visualize_html, save_to_txt
 
 TEST_RT_URL = 'http://192.168.106.12:9001/v2.1/models/'
+
 
 def test_pdf_doc():
   url = TEST_RT_URL
@@ -9,7 +10,6 @@ def test_pdf_doc():
   cell_model_ep = url + 'elem_table_cell_detect_v1/infer'
   rowcol_model_ep = url + 'elem_table_rowcol_detect_v1/infer'
   table_model_ep = url + 'elem_table_detect_v1/infer'
-
 
   model_params = {
     'layout_ep': layout_ep,
@@ -36,7 +36,6 @@ def test_pdf_doc2():
   cell_model_ep = url + 'elem_table_cell_detect_v1/infer'
   rowcol_model_ep = url + 'elem_table_rowcol_detect_v1/infer'
   table_model_ep = url + 'elem_table_detect_v1/infer'
-
 
   model_params = {
     'layout_ep': layout_ep,
@@ -69,7 +68,6 @@ def test_pdf_doc3():
     'rowcol_model_ep': rowcol_model_ep,
     'table_model_ep': table_model_ep,
   }
-
 
   filename = "examples/docs/sw-flp-1965-v1.pdf"
   pdf_doc = PDFDocument(
