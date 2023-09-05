@@ -1,38 +1,39 @@
-<!--
-# Copyright 2022-2025, DataElem, Inc. All rights reserved.
-#
-# Redistribution and use in source and binary forms, with or without
-# modification, are permitted provided that the following conditions
-# are met:
-#  * Redistributions of source code must retain the above copyright
-#    notice, this list of conditions and the following disclaimer.
-#  * Redistributions in binary form must reproduce the above copyright
-#    notice, this list of conditions and the following disclaimer in the
-#    documentation and/or other materials provided with the distribution.
-#  * Neither the name of NVIDIA CORPORATION nor the names of its
-#    contributors may be used to endorse or promote products derived
-#    from this software without specific prior written permission.
-#
-# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS ``AS IS'' AND ANY
-# EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
-# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
-# PURPOSE ARE DISCLAIMED.  IN NO EVENT SHALL THE COPYRIGHT OWNER OR
-# CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
-# EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
-# PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
-# PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY
-# OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
-# (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
-# OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
--->
+## What is bisheng-unstructured?
 
-# Bisheng-Unstructured
+Bisheng-unstructured is an open-source unstructured data parsing library built to 
+power LLM applications like pretrain, finetune, prompting engineering. 
+Bisheng-unstructured makes the unstructured data porcessing more easily and provides a consistent user experience regardless of any file types.
 
-unstructured for bisheng product.
+## Key features
 
-## ChangeLog
+- High precision pdf layout parser
+- High precision table structure recovering
+- High precision OCR ability
+- More friendly for token prossing for the visual text element, like table, list
 
-## What's New in 0.0.1
+## Quick start
 
-## Features
+### Start with DataElem Services.
 
+We provide a open cloud service for easily use. See [free trial][https://m7a7tqsztt.feishu.cn/wiki/CTXNwpqGKiMs5FkKlPJcylfonuD].
+
+
+### Install bisheng-unstructured
+
+- Install from pip: `pip install bisheng-unstructured`
+- [Quick Start Guide](https://m7a7tqsztt.feishu.cn/wiki/CTXNwpqGKiMs5FkKlPJcylfonuD)
+
+
+### Using from pre-builded image
+
+## Documentation
+
+For guidance on installation, development, deployment, and administration, 
+check out [bisheng-unstructured Docs](https://m7a7tqsztt.feishu.cn/wiki/CTXNwpqGKiMs5FkKlPJcylfonuD). 
+
+
+## Acknowledgments
+
+Milvus adopts dependencies from the following:
+
+- Thanks to [unstructured](https://github.com/Unstructured-IO/unstructured) for the main framework.
