@@ -2,10 +2,7 @@ import re
 import textwrap
 from typing import IO, Callable, List, Optional, Tuple
 
-from bisheng_unstructured.cleaners.core import (
-    auto_paragraph_grouper,
-    clean_bullets,
-)
+from bisheng_unstructured.cleaners.core import auto_paragraph_grouper, clean_bullets
 from bisheng_unstructured.documents.coordinates import CoordinateSystem
 from bisheng_unstructured.documents.elements import (
     Address,

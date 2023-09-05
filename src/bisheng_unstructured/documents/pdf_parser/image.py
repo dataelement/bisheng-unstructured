@@ -1,29 +1,25 @@
-from typing import Any, Iterator, List, Mapping, Optional, Union
 import base64
+from typing import Any, Iterator, List, Mapping, Optional, Union
 
 from bisheng_unstructured.documents.base import Page
-
-from bisheng_unstructured.models import (
-    LayoutAgent, TableAgent, OCRAgent, TableDetAgent)
+from bisheng_unstructured.models import LayoutAgent, OCRAgent, TableAgent, TableDetAgent
 
 from .blob import Blob
 from .pdf import PDFDocument
 
 
 class ImageDocument(PDFDocument):
-
     def __init__(
         self,
         file: str,
         model_params: dict,
         with_columns: bool = False,
-        text_elem_sep: str = '\n',
+        text_elem_sep: str = "\n",
         enhance_table: bool = True,
-        lang: str = 'zh',
+        lang: str = "zh",
         verbose: bool = False,
         **kwargs
     ) -> None:
-
         self.layout_agent = LayoutAgent(**model_params)
         self.table_agent = TableAgent(**model_params)
         self.ocr_agent = OCRAgent(**model_params)
@@ -47,11 +43,10 @@ class ImageDocument(PDFDocument):
         blob = Blob.from_path(self.file)
         groups = []
         b64_data = base64.b64encode(blob.as_bytes()).decode()
-        layout_inp = {'b64_image': b64_data}
+        layout_inp = {"b64_image": b64_data}
         layout = self.layout_agent.predict(layout_inp)
 
-        blocks = self._allocate_semantic(
-            None, layout, b64_data, self.is_scan, self.lang)
+        blocks = self._allocate_semantic(None, layout, b64_data, self.is_scan, self.lang)
 
         if blocks:
             if self.with_columns:
@@ -63,4 +58,3 @@ class ImageDocument(PDFDocument):
         groups = self._allocate_continuous(groups, self.lang)
         pages = self._save_to_pages(groups)
         return pages
-      

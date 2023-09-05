@@ -1,9 +1,5 @@
 import contextlib
-from typing import (
-    IO,
-    List,
-    Optional,
-)
+from typing import IO, List, Optional
 
 import requests
 

@@ -5,10 +5,7 @@ from lxml import etree
 from bisheng_unstructured.documents.base import Document, Page
 from bisheng_unstructured.file_utils.encoding import read_txt_file
 from bisheng_unstructured.logger import logger
-from bisheng_unstructured.partition.text import (
-    element_from_text,
-    partition_text,
-)
+from bisheng_unstructured.partition.text import element_from_text, partition_text
 
 VALID_PARSERS = Union[etree.HTMLParser, etree.XMLParser, None]
 

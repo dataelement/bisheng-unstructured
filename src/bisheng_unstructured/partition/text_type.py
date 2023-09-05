@@ -126,7 +126,7 @@ def is_possible_title(
         trace_logger.detail("Not a title. Text is empty.")  # type: ignore
         return False
 
-    if language == 'zh':
+    if language == "zh":
         if ZH_PUNC_NOT_IN_TITLE_RE.search(text) is not None:
             return False
 
@@ -138,7 +138,6 @@ def is_possible_title(
             return False
 
         return True
-
 
     if text.isupper() and ENDS_IN_PUNCT_RE.search(text) is not None:
         return False

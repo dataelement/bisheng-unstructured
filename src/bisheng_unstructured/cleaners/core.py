@@ -3,9 +3,7 @@ import re
 import sys
 import unicodedata
 
-from bisheng_unstructured.file_utils.encoding import (
-    format_encoding_str,
-)
+from bisheng_unstructured.file_utils.encoding import format_encoding_str
 from bisheng_unstructured.nlp.patterns import (
     DOUBLE_PARAGRAPH_PATTERN_RE,
     E_BULLET_PATTERN,

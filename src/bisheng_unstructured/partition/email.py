@@ -14,10 +14,7 @@ from bisheng_unstructured.file_utils.encoding import (
     read_txt_file,
     validate_encoding,
 )
-from bisheng_unstructured.partition.common import (
-    convert_to_bytes,
-    exactly_one,
-)
+from bisheng_unstructured.partition.common import convert_to_bytes, exactly_one
 
 if sys.version_info < (3, 8):
     from typing_extensions import Final

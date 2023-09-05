@@ -83,7 +83,6 @@ class PageLayout:
     ):
         self.elements: Collection[Any] = []
 
-
     def __str__(self) -> str:
         return "\n\n".join([str(element) for element in self.elements])
 
@@ -134,7 +133,7 @@ class PageLayout:
         """Creates a PageLayout from an already-loaded PIL Image."""
         page = cls(
             number=number,
-            image=image,    
+            image=image,
             layout=layout,
             detection_model=detection_model,
             element_extraction_model=element_extraction_model,

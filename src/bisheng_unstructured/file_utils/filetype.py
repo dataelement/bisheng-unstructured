@@ -11,6 +11,7 @@ from typing import IO, Callable, List, Optional
 
 from bisheng_unstructured.documents.coordinates import PixelSpace
 from bisheng_unstructured.documents.elements import Element, PageBreak
+from bisheng_unstructured.documents.layout import DocumentLayout, PageLayout
 from bisheng_unstructured.file_utils.encoding import detect_file_encoding, format_encoding_str
 from bisheng_unstructured.nlp.patterns import LIST_OF_DICTS_PATTERN
 from bisheng_unstructured.partition.common import (
@@ -19,8 +20,6 @@ from bisheng_unstructured.partition.common import (
     exactly_one,
     normalize_layout_element,
 )
-
-from bisheng_unstructured.documents.layout import DocumentLayout, PageLayout
 
 try:
     import magic
