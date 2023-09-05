@@ -534,9 +534,12 @@ def document_to_element_list(
             else:
                 if last_modification_date:
                     element.metadata.last_modified = last_modification_date
-                element.metadata.text_as_html = (
-                    layout_element.text_as_html if hasattr(layout_element, "text_as_html") else None
-                )
+                # element.metadata.text_as_html = (
+                #     layout_element.text_as_html if hasattr(layout_element, "text_as_html") else None
+                # )
+
+                element.metadata.text_as_html = layout_element.metadata.text_as_html
+
                 page_elements.append(element)
             coordinates = (
                 element.metadata.coordinates.points if element.metadata.coordinates else None

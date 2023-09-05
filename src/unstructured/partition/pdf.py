@@ -168,6 +168,7 @@ def partition_pdf_or_image(
     else:
         pdf_text_extractable = False
 
+    # print('pdf_text_extractable', pdf_text_extractable)
     strategy = determine_pdf_or_image_strategy(
         strategy,
         filename=filename,
@@ -237,12 +238,14 @@ def _partition_pdf_or_image_local(
         process_file_with_model_kwargs = {
             "is_image": is_image,
             "ocr_languages": ocr_languages,
-            "ocr_mode": ocr_mode,
+            # "ocr_mode": ocr_mode,
             "extract_tables": infer_table_structure,
             "model_name": model_name,
         }
         if pdf_image_dpi:
             process_file_with_model_kwargs["pdf_image_dpi"] = pdf_image_dpi
+
+        # print('0:process_file_with_model_kwargs', process_file_with_model_kwargs)
         layout = process_file_with_model(
             filename,
             **process_file_with_model_kwargs,
