@@ -48,6 +48,6 @@ For questions, we recommend posting in our community GitHub [Discussions](https:
 
 ## Acknowledgments
 
-Milvus adopts dependencies from the following:
+bisheng-unstructured adopts dependencies from the following:
 
 - Thanks to [unstructured](https://github.com/Unstructured-IO/unstructured) for the main framework.
