@@ -1,45 +1,50 @@
-from unstructured.partition.pdf import partition_pdf
+from bisheng_unstructured.partition.pdf import partition_pdf
+from bisheng_unstructured.documents.html_utils import visualize_html, save_to_txt
 
 
 def test1():
-  elements = partition_pdf(filename="example-docs/layout-parser-paper-fast.pdf")
-  texts = "\n\n".join([str(el) for el in elements])
-  with open('test_output/out1.txt', 'w') as fout:
-     fout.write(texts)
+  elements = partition_pdf(
+    filename="examples/docs/layout-parser-paper-fast.pdf",
+    infer_table_structure=True)
+
+  # for el in elements:
+  #   if el.category == 'Title':
+  #     print('Title', el.text)
+
+  visualize_html(elements, 'data/layout-parser-paper-fast.html')
+  save_to_txt(elements, 'data/layout-parser-paper-fast.txt')
 
 
 def test2():
   elements = partition_pdf(
-    filename="example-docs/layout-parser-paper.pdf",
+    filename="examples/docs/layout-parser-paper.pdf",
     infer_table_structure=True,
     strategy="hi_res")
 
-
-  cates = [el.category for el in elements]
-  print(cates)
+  visualize_html(elements, 'data/layout-parser-paper.html')
+  save_to_txt(elements, 'data/layout-parser-paper.txt')
 
 
 def test3():
   elements = partition_pdf(
-    filename="example-docs/达梦数据库招股说明书_test_v1.pdf",
-    # infer_table_structure=True,
-    strategy="fast")
+    filename="examples/docs/maoxuan_full.pdf",
+    infer_table_structure=True,
+    strategy="hi_res")
 
-  cates = [el.category for el in elements]
-  print(cates)
+  visualize_html(elements, 'data/maoxuan_full.html')
 
-  content = []
-  for el in elements:
-    if el.category == 'Title':
-      content.append(f'<h1>{el.text}</h1>')
-    else:
-      content.append(f'<p>{el.text}</p>')
 
-  # print(content)
-  with open('test_output/dameng_v1.html', 'w') as fout:
-    fout.write('\n'.join(content))
+def test4():
+  filename = "examples/docs/sw-flp-1965-v1.pdf"
+  elements = partition_pdf(
+    filename=filename,
+    infer_table_structure=True,
+    strategy="hi_res")
+
+  visualize_html(elements, 'data/sw-flp-1965-v1_ori.html')
 
 
 # test1()
 # test2()
-test3()
+# test3()
+test4()
