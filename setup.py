@@ -1,4 +1,4 @@
-# Copyright (c) 2020 Dataelem Inc. Authors. All Rights Reserved.
+# Copyright (c) 2023 Dataelem Inc. Authors. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -17,6 +17,16 @@ import os
 import setuptools
 
 
+def get_version():
+    if os.getenv("RELEASE_VERSION"):
+        version = os.environ["RELEASE_VERSION"]
+    else:
+        version_file = os.path.join(os.path.dirname(__file__), "version.txt")
+        with open(version_file, "r") as f:
+            version = f.read().strip()
+    return version.lstrip("v")
+
+
 def read_requirements_file(filepath):
     with open(filepath) as fin:
         requirements = fin.read()
@@ -24,12 +34,13 @@ def read_requirements_file(filepath):
 
 
 extras = {}
-REQUIRED_PACKAGES = read_requirements_file('requirements.txt')
+REQUIRED_PACKAGES = read_requirements_file("requirements.txt")
 
 
 def read(*names, **kwargs):
-    with io.open(os.path.join(os.path.dirname(__file__), *names),
-                 encoding=kwargs.get('encoding', 'utf8')) as fp:
+    with io.open(
+        os.path.join(os.path.dirname(__file__), *names), encoding=kwargs.get("encoding", "utf8")
+    ) as fp:
         return fp.read()
 
 
@@ -39,7 +50,7 @@ def get_package_data_files(package, data, package_dir=None):
     since `package_data` ignores directories.
     """
     if package_dir is None:
-        package_dir = os.path.join(*package.split('.'))
+        package_dir = os.path.join(*package.split("."))
     all_files = []
     for f in data:
         path = os.path.join(package_dir, f)
@@ -56,32 +67,31 @@ def get_package_data_files(package, data, package_dir=None):
 
 
 setuptools.setup(
-    name='bisheng-unstructured',
-    version='0.0.1',
-    author='DataElem',
-    author_email='contact@dataelem.com',
-    description='ETLs fro LLMs',
-    long_description=read('README.md'),
-    long_description_content_type='text/markdown',
-    url='https://docs.dataelem.com/bisheng-unstructured',
+    name="bisheng-unstructured",
+    version=get_version(),
+    author="DataElem",
+    author_email="contact@dataelem.com",
+    description="ETLs fro LLMs",
+    long_description=read("README.md"),
+    long_description_content_type="text/markdown",
+    url="https://github.com/dataelement/bisheng-unstructured",
     packages=setuptools.find_packages(
-        where='./src',
-        exclude=('examples*', 'tests*', 'applications*', 'model_zoo*'),
+        where="./src",
+        exclude=("examples*", "tests*", "applications*", "model_zoo*"),
     ),
+    package_dir={"": "./src"},
     package_data={},
     setup_requires=[],
     install_requires=REQUIRED_PACKAGES,
     entry_points={},
     extras_require=extras,
-    python_requires='>=3.6',
+    python_requires=">=3.8",
     classifiers=[
-        'Programming Language :: Python :: 3',
-        'Programming Language :: Python :: 3.6',
-        'Programming Language :: Python :: 3.7',
-        'Programming Language :: Python :: 3.8',
-        'Programming Language :: Python :: 3.9',
-        'License :: OSI Approved :: Apache Software License',
-        'Operating System :: OS Independent',
+        "Programming Language :: Python :: 3",
+        "Programming Language :: Python :: 3.8",
+        "Programming Language :: Python :: 3.9",
+        "License :: OSI Approved :: Apache Software License",
+        "Operating System :: OS Independent",
     ],
-    license='Apache 2.0',
+    license="Apache 2.0",
 )

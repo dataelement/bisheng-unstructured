@@ -30,7 +30,12 @@ function install_deps() {
 
 }
 
-prepare_env
-# install_deps
+function twine_upload() {
+  twine upload dist/* -u __token__ -p ${PYPI_PASSWORD} --repository pypi
+}
 
+
+# prepare_env
+# install_deps
+twine_upload
 
