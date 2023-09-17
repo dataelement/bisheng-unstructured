@@ -143,3 +143,6 @@ VALID_JSON_CHARACTERS = r"[,:{}\[\]0-9.\-+Eaeflnr-u \n\r\t]"
 # For zh variables
 ZH_PUNC_NOT_IN_TITLE_PATTERN = r"[，。、；！|,;!]"
 ZH_PUNC_NOT_IN_TITLE_RE = re.compile(ZH_PUNC_NOT_IN_TITLE_PATTERN)
+
+ZH_PUNC_NOT_IN_PPTX_TITLE_PATTERN = r"[。；！|;!]"
+ZH_PUNC_NOT_IN_PPTX_TITLE_RE = re.compile(ZH_PUNC_NOT_IN_PPTX_TITLE_PATTERN)

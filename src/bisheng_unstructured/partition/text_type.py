@@ -18,6 +18,7 @@ from bisheng_unstructured.nlp.patterns import (
     UNICODE_BULLETS_RE,
     US_CITY_STATE_ZIP_RE,
     US_PHONE_NUMBERS_RE,
+    ZH_PUNC_NOT_IN_PPTX_TITLE_RE,
     ZH_PUNC_NOT_IN_TITLE_RE,
 )
 from bisheng_unstructured.nlp.tokenize import pos_tag, sent_tokenize, word_tokenize
@@ -99,6 +100,7 @@ def is_possible_title(
     non_alpha_threshold: float = 0.5,
     language: str = "en",
     language_checks: bool = False,
+    is_pptx: bool = False,
 ) -> bool:
     """Checks to see if the text passes all of the checks for a valid title.
 
@@ -127,7 +129,8 @@ def is_possible_title(
         return False
 
     if language == "zh":
-        if ZH_PUNC_NOT_IN_TITLE_RE.search(text) is not None:
+        PUNK_RE = ZH_PUNC_NOT_IN_PPTX_TITLE_RE if is_pptx else ZH_PUNC_NOT_IN_TITLE_RE
+        if PUNK_RE.search(text) is not None:
             return False
 
         title_max_word_length = int(

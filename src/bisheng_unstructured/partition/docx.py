@@ -8,6 +8,7 @@ from docx.oxml.shared import qn
 from docx.table import Table as DocxTable
 from docx.text.paragraph import Paragraph
 from docx.text.run import Run
+from lxml import etree
 
 from bisheng_unstructured.cleaners.core import clean_bullets
 from bisheng_unstructured.documents.elements import (
@@ -25,6 +26,7 @@ from bisheng_unstructured.documents.elements import (
     Title,
     process_metadata,
 )
+from bisheng_unstructured.documents.markdown import transform_html_table_to_md
 from bisheng_unstructured.file_utils.filetype import FileType, add_metadata_with_filetype
 from bisheng_unstructured.partition.common import (
     convert_ms_office_table_to_text,
@@ -140,6 +142,7 @@ def partition_docx(
 
     # Verify that only one of the arguments was provided
     exactly_one(filename=filename, file=file)
+    language = kwargs.get("language", "zh")
 
     last_modification_date = None
     if filename is not None:
@@ -168,6 +171,7 @@ def partition_docx(
     section = 0
     is_list = False
     for element_item in document.element.body:
+        # print("---element_item---", element_item, element_item.tag, element_item.xml)
         if element_item.tag.endswith("tbl"):
             table = document.tables[table_index]
             emphasized_texts = _get_emphasized_texts_from_table(table)
@@ -175,7 +179,8 @@ def partition_docx(
                 emphasized_texts,
             )
             html_table = convert_ms_office_table_to_text(table, as_html=True)
-            text_table = convert_ms_office_table_to_text(table, as_html=False)
+            # text_table = convert_ms_office_table_to_text(table, as_html=False)
+            text_table = transform_html_table_to_md(html_table)["text"]
             element = Table(text_table)
             if element is not None:
                 element.metadata = ElementMetadata(
@@ -196,7 +201,7 @@ def partition_docx(
             emphasized_text_contents, emphasized_text_tags = _extract_contents_and_tags(
                 emphasized_texts,
             )
-            para_element: Optional[Text] = _paragraph_to_element(paragraph, is_list)
+            para_element: Optional[Text] = _paragraph_to_element(paragraph, is_list, language)
             if para_element is not None:
                 para_element.metadata = ElementMetadata(
                     filename=metadata_filename,
@@ -207,6 +212,14 @@ def partition_docx(
                 )
                 elements.append(para_element)
             is_list = False
+            # print(
+            #     "---p---",
+            #     emphasized_texts,
+            #     emphasized_text_contents,
+            #     emphasized_text_tags,
+            #     para_element,
+            #     paragraph.style,
+            # )
         elif element_item.tag.endswith("sectPr"):
             if len(headers_and_footers) > section:
                 footers = headers_and_footers[section][1]
@@ -226,26 +239,30 @@ def partition_docx(
 
 
 def _paragraph_to_element(
-    paragraph: docx.text.paragraph.Paragraph,
-    is_list=False,
+    paragraph: docx.text.paragraph.Paragraph, is_list=False, language="eng"
 ) -> Optional[Text]:
     """Converts a docx Paragraph object into the appropriate unstructured document element.
     If the paragraph style is "Normal" or unknown, we try to predict the element type from the
     raw text."""
     text = paragraph.text
+    # normailize the text
+    text = text.strip("\n")
     style_name = paragraph.style and paragraph.style.name  # .style can be None
 
     if len(text.strip()) == 0:
         return None
+
+    if "Heading" in paragraph.style.name:
+        return Title(text)
 
     element_class = STYLE_TO_ELEMENT_MAPPING.get(style_name)
 
     # NOTE(robinson) - The "Normal" style name will return None since it's in the mapping.
     # Unknown style names will also return None
     if is_list:
-        return _text_to_element(text, is_list)
+        return _text_to_element(text, is_list, language=language)
     elif element_class is None:
-        return _text_to_element(text)
+        return _text_to_element(text, language=language)
     else:
         return element_class(text)
 
@@ -266,7 +283,7 @@ def _element_contains_pagebreak(element) -> bool:
     return False
 
 
-def _text_to_element(text: str, is_list=False) -> Optional[Text]:
+def _text_to_element(text: str, is_list=False, language="eng") -> Optional[Text]:
     """Converts raw text into an unstructured Text element."""
     if is_bulleted_text(text) or is_list:
         clean_text = clean_bullets(text).strip()
@@ -280,8 +297,8 @@ def _text_to_element(text: str, is_list=False) -> Optional[Text]:
         return None
     elif is_possible_narrative_text(text):
         return NarrativeText(text)
-    elif is_possible_title(text):
-        return Title(text)
+    # elif is_possible_title(text, title_max_word_length=20, language=language):
+    #     return Title(text)
     else:
         return Text(text)
 
