@@ -1,7 +1,7 @@
 from bisheng_unstructured.documents.markdown import transform_html_table_to_md
 
 
-def visualize_html(elements, output_file):
+def visualize_html(elements, output_file=None):
     html_prefix = """
     <html>
     <head>
@@ -50,11 +50,15 @@ def visualize_html(elements, output_file):
 
     body_content = "\n".join(texts)
     html_str = html_prefix + body_content + html_suffix
-    with open(output_file, "w") as fout:
-        fout.write(html_str)
+
+    if output_file:
+        with open(output_file, "w") as fout:
+            fout.write(html_str)
+    else:
+        return html_str
 
 
-def save_to_txt(elements, output_file):
+def save_to_txt(elements, output_file=None):
     text_elem_sep = "\n"
     content_page = []
     is_first_elem = True
@@ -77,5 +81,8 @@ def save_to_txt(elements, output_file):
 
         last_label = label
 
-    with open(output_file, "w") as fout:
-        fout.write("".join(content_page))
+    if output_file:
+        with open(output_file, "w") as fout:
+            fout.write("".join(content_page))
+    else:
+        return "".join(content_page)
