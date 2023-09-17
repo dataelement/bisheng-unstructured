@@ -1,0 +1,46 @@
+import base64
+import os
+
+import requests
+
+
+def test1():
+    url = "http://192.168.106.12:10001/v1/etl4llm/predict"
+    filename = "examples/docs/maoxuan_sample1.jpg"
+    b64_data = base64.b64encode(open(filename, "rb").read()).decode()
+    inp = dict(filename=os.path.basename(filename), b64_data=[b64_data], mode="text")
+    resp = requests.post(url, json=inp).json()
+    print(resp)
+
+
+def test2():
+    url = "http://192.168.106.12:10001/v1/etl4llm/predict"
+    filename = "./examples/docs/毛泽东课件.pptx"
+    b64_data = base64.b64encode(open(filename, "rb").read()).decode()
+    inp = dict(filename=os.path.basename(filename), b64_data=[b64_data], mode="text")
+    resp = requests.post(url, json=inp).json()
+    print(resp)
+
+
+def test3():
+    url = "http://192.168.106.12:10001/v1/etl4llm/predict"
+    filename = "./examples/docs/毛泽东课件.pptx"
+    b64_data = base64.b64encode(open(filename, "rb").read()).decode()
+    inp = dict(filename=os.path.basename(filename), b64_data=[b64_data], mode="partition")
+    resp = requests.post(url, json=inp).json()
+    print(resp)
+
+
+def test4():
+    url = "http://192.168.106.12:10001/v1/etl4llm/predict"
+    filename = "./examples/docs/毛泽东课件.pptx"
+    b64_data = base64.b64encode(open(filename, "rb").read()).decode()
+    inp = dict(filename=os.path.basename(filename), b64_data=[b64_data], mode="vis")
+    resp = requests.post(url, json=inp).json()
+    print(resp)
+
+
+# test1()
+# test2()
+# test3()
+test4()
