@@ -41,7 +41,8 @@ def visualize_html(elements, output_file):
             text = el.metadata.text_as_html
             text = text.replace("\n", " ")
         else:
-            text = f"<p {styles[idx % 2]}>{el.text}</p>"
+            text = el.text.replace("\n", "<br>")
+            text = f"<p {styles[idx % 2]}>{text}</p>"
             idx += 1
 
         if text:
@@ -57,6 +58,7 @@ def save_to_txt(elements, output_file):
     text_elem_sep = "\n"
     content_page = []
     is_first_elem = True
+    last_label = ""
     for el in elements:
         label, text = el.category, el.text
         if is_first_elem:
@@ -64,12 +66,16 @@ def save_to_txt(elements, output_file):
             content_page.append(f_text)
             is_first_elem = False
         else:
-            if label == "Title":
+            if last_label == "Title" and label == "Title":
+                content_page.append("\n" + text + "\n")
+            elif label == "Title":
                 content_page.append("\n\n" + text + "\n")
             elif label == "Table":
                 content_page.append("\n\n" + text + "\n")
             else:
                 content_page.append(text_elem_sep + text)
+
+        last_label = label
 
     with open(output_file, "w") as fout:
         fout.write("".join(content_page))

@@ -10,6 +10,7 @@ from bisheng_unstructured.documents.elements import (
     Table,
     process_metadata,
 )
+from bisheng_unstructured.documents.markdown import transform_html_table_to_md
 from bisheng_unstructured.file_utils.filetype import FileType, add_metadata_with_filetype
 from bisheng_unstructured.partition.common import (
     exactly_one,
@@ -63,7 +64,9 @@ def partition_xlsx(
     for sheet_name, table in sheets.items():
         page_number += 1
         html_text = table.to_html(index=False, header=include_header, na_rep="")
-        text = soupparser_fromstring(html_text).text_content()
+        text = transform_html_table_to_md(html_text)["text"]
+
+        # text = soupparser_fromstring(html_text).text_content()
 
         if include_metadata:
             metadata = ElementMetadata(

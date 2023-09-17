@@ -31,7 +31,7 @@ function install_deps() {
 }
 
 function twine_upload() {
-  twine upload dist/* -u __token__ -p ${PYPI_PASSWORD} --repository pypi
+  twine upload dist/* -u __token__ -p ${PYPI_PASSWORD} --repository pypi --skip-existing
 }
 
 

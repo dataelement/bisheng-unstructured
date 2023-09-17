@@ -1,3 +1,5 @@
+import json
+import re
 from tempfile import SpooledTemporaryFile
 from typing import IO, BinaryIO, List, Optional, Union, cast
 
@@ -15,6 +17,7 @@ from bisheng_unstructured.documents.elements import (
     Title,
     process_metadata,
 )
+from bisheng_unstructured.documents.markdown import transform_html_table_to_md
 from bisheng_unstructured.file_utils.filetype import FileType, add_metadata_with_filetype
 from bisheng_unstructured.partition.common import (
     convert_ms_office_table_to_text,
@@ -30,6 +33,10 @@ from bisheng_unstructured.partition.text_type import (
 )
 
 OPENXML_SCHEMA_NAME = "{http://schemas.openxmlformats.org/drawingml/2006/main}"
+
+RE_MULTLINES = re.compile(pattern=r"\n+", flags=re.DOTALL)
+RE_SPACES = re.compile(pattern=r"[ \t\r\f\v]+", flags=re.DOTALL)
+RE_NORMAL_SPACES = re.compile(pattern=r"\s+", flags=re.DOTALL)
 
 
 @process_metadata()
@@ -85,6 +92,10 @@ def partition_pptx(
     elements: List[Element] = []
     metadata = ElementMetadata(filename=metadata_filename or filename)
     num_slides = len(presentation.slides)
+    slide_height = presentation.slide_height
+    slide_width = presentation.slide_width
+    page_bbox = [slide_width, slide_height]
+    sel_i = 30
     for i, slide in enumerate(presentation.slides):
         metadata = ElementMetadata.from_dict(metadata.to_dict())
         metadata.last_modified = metadata_last_modified or last_modification_date
@@ -97,11 +108,16 @@ def partition_pptx(
                 if notes_text.strip() != "":
                     elements.append(NarrativeText(text=notes_text, metadata=metadata))
 
+        shape_infos = []
+        shape_index = -1
         for shape in _order_shapes(slide.shapes):
+            shape_index += 1
             if shape.has_table:
                 table: pptx.table.Table = shape.table
                 html_table = convert_ms_office_table_to_text(table, as_html=True)
-                text_table = convert_ms_office_table_to_text(table, as_html=False)
+                # text_table = convert_ms_office_table_to_text(table, as_html=False)
+                text_table = transform_html_table_to_md(html_table)["text"]
+                # print('---table---', html_table, text_table)
                 if (text_table := text_table.strip()) != "":
                     metadata = ElementMetadata(
                         filename=metadata_filename or filename,
@@ -113,24 +129,46 @@ def partition_pptx(
                 continue
             if not shape.has_text_frame:
                 continue
-            # NOTE(robinson) - avoid processing shapes that are not on the actual slide
-            # NOTE - skip check if no top or left position (shape displayed top left)
-            if (shape.top and shape.left) and (shape.top < 0 or shape.left < 0):
+
+            bbox = [shape.left, shape.top, shape.width, shape.height]
+            shape_info = []
+            shape_infos.append({"runs": shape_info, "bbox": bbox})
+            metadata = {"bbox": bbox, "page_bbox": page_bbox}
+            metadata = ElementMetadata(
+                page_number=i, text_as_html=json.dumps(metadata), page_name="paragraph"
+            )
+
+            TITLE_AREA_THRESHOLD = 0.2
+            ratio = abs(bbox[3] - bbox[1]) * 1.0 / page_bbox[1]
+            # print('bbox', bbox, page_bbox, ratio)
+
+            is_title = False
+            text = None
+            if shape_index == 0 and ratio <= TITLE_AREA_THRESHOLD:
+                text = re.sub(RE_NORMAL_SPACES, " ", shape.text_frame.text)
+                is_title = is_possible_title(
+                    text, language="zh", title_max_word_length=30, is_pptx=True
+                )
+
+            if not is_title:
+                text = shape.text_frame.text.replace("\x0b", "\n")
+                text = re.sub(RE_MULTLINES, "\n", text).strip()
+                text = re.sub(RE_SPACES, " ", text)
+
+            if text == "":
                 continue
-            for paragraph in shape.text_frame.paragraphs:
-                text = paragraph.text
-                if text.strip() == "":
-                    continue
-                if _is_bulleted_paragraph(paragraph):
-                    elements.append(ListItem(text=text, metadata=metadata))
-                elif is_email_address(text):
-                    elements.append(EmailAddress(text=text))
-                elif is_possible_narrative_text(text):
-                    elements.append(NarrativeText(text=text, metadata=metadata))
-                elif is_possible_title(text):
-                    elements.append(Title(text=text, metadata=metadata))
-                else:
-                    elements.append(Text(text=text, metadata=metadata))
+
+            # for paragraph in shape.text_frame.paragraphs:
+            #     print('is_bulleted', _is_bulleted_paragraph(paragraph))
+
+            if is_email_address(text):
+                elements.append(EmailAddress(text=text))
+            elif is_possible_narrative_text(text):
+                elements.append(NarrativeText(text=text, metadata=metadata))
+            elif is_title:
+                elements.append(Title(text=text, metadata=metadata))
+            else:
+                elements.append(Text(text=text, metadata=metadata))
 
         if include_page_breaks and i < num_slides - 1:
             elements.append(PageBreak(text=""))
