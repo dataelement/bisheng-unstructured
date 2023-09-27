@@ -781,7 +781,7 @@ class PDFDocument(Document):
 
             elif label in effective_class_inds:
                 text = join_lines(b[4], False, lang)
-                filtered_blocks.append((b[0], b[1], b[2], b[3], text, b[5], label))
+                filtered_blocks.append((b[0], b[1], b[2], b[3], text, b[5], label, b[4]))
 
         # print('---filtered_blocks---')
         # for b in filtered_blocks:
@@ -897,7 +897,18 @@ class PDFDocument(Document):
                 if c0 > LINE_FULL_THRESHOLD and c1 < START_THRESHOLD and c2 < SIMI_HEIGHT_THRESHOLD:
                     new_text = join_lines([b0[4], b1[4]], lang)
 
-                    new_block = (b1[0], b1[1], b1[2], b1[3], new_text, b1[5], b1[6])
+                    joined_lines = b0[-1] + b1[-1]
+                    joined_bboxes = b0[5] + b1[5]
+                    new_block = (
+                        b1[0],
+                        b1[1],
+                        b1[2],
+                        b1[3],
+                        new_text,
+                        joined_bboxes,
+                        b1[6],
+                        joined_lines,
+                    )
                     groups[i][0] = new_block
                     groups[i - 1].pop(-1)
 
@@ -922,26 +933,29 @@ class PDFDocument(Document):
 
         return groups
 
-    def _save_to_pages(self, groups):
+    def _save_to_pages(self, groups, page_inds):
         TITLE_ID = 3
         TEXT_ID = 4
         TABLE_ID = 5
         pages = []
-        for idx, blocks in enumerate(groups):
+        for idx, blocks in zip(page_inds, groups):
             page = Page(number=idx)
             for b in blocks:
+                bbox = [b[0], b[1], b[2], b[3]]
                 label, text = b[6], b[4]
+                extra_data = {"bbox": bbox}
+                metadata = ElementMetadata(extra_data=extra_data)
                 if label == TITLE_ID:
-                    element = Title(text=text)
+                    element = Title(text=text, metadata=meta)
                 elif label == TEXT_ID:
-                    element = Text(text=text)
+                    element = Text(text=text, metadata=meta)
                 elif label == TABLE_ID:
                     html = b[-1]
                     clean_html = clean_html_table(html)
-                    meta = ElementMetadata(text_as_html=clean_html)
+                    meta = ElementMetadata(text_as_html=clean_html, extra_data=extra_data)
                     element = Table(text=text, metadata=meta)
                 else:
-                    element = NarrativeText(text=text)
+                    element = NarrativeText(text=text, metadata=meta)
 
                 page.elements.append(element)
             pages.append(page)
@@ -953,6 +967,7 @@ class PDFDocument(Document):
         blob = Blob.from_path(self.file)
         start = self.start
         groups = []
+        page_inds = []
         lang = None
         with blob.as_bytes_io() as file_path:
             fitz_doc = fitz.open(file_path)
@@ -991,8 +1006,11 @@ class PDFDocument(Document):
                 if self.with_columns:
                     sub_groups = self._divide_blocks_into_groups(blocks)
                     groups.extend(sub_groups)
+                    for _ in sub_groups:
+                        page_inds.append(idx + 1)
                 else:
                     groups.append(blocks)
+                    page_inds.append(idx + 1)
 
                 if self.verbose:
                     count = idx - start + 1
@@ -1002,7 +1020,7 @@ class PDFDocument(Document):
                         print(f"process {count} pages used {elapse}sec...")
 
         groups = self._allocate_continuous(groups, lang)
-        pages = self._save_to_pages(groups)
+        pages = self._save_to_pages(groups, page_inds)
         return pages
 
     @property

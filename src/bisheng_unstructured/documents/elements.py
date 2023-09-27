@@ -135,7 +135,7 @@ class ElementMetadata:
     filetype: Optional[str] = None
     attached_to_filename: Optional[str] = None
 
-    # Page numbers currenlty supported for PDF, HTML and PPT documents
+    # Page numbers currently supported for PDF, HTML and PPT documents
     page_number: Optional[int] = None
 
     # Page name. The sheet name in XLXS documents.
@@ -166,6 +166,9 @@ class ElementMetadata:
 
     # Metadata extracted via regex
     regex_metadata: Optional[Dict[str, List[RegexMetadata]]] = None
+
+    # extra data
+    extra_data: Optional[Dict[str, Any]] = None
 
     def __post_init__(self):
         if isinstance(self.filename, pathlib.Path):
@@ -266,7 +269,7 @@ def _add_regex_metadata(
 ) -> List[Element]:
     """Adds metadata based on a user provided regular expression.
     The additional metadata will be added to the regex_metadata
-    attrbuted in the element metadata."""
+    attributed in the element metadata."""
     for element in elements:
         if isinstance(element, Text):
             _regex_metadata: Dict["str", List[RegexMetadata]] = {}
