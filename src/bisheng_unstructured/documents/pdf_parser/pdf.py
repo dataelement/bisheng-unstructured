@@ -933,7 +933,7 @@ class PDFDocument(Document):
 
         return groups
 
-    def _save_to_pages(self, groups, page_inds):
+    def _save_to_pages(self, groups, page_inds, lang):
         TITLE_ID = 3
         TEXT_ID = 4
         TABLE_ID = 5
@@ -943,19 +943,43 @@ class PDFDocument(Document):
             for b in blocks:
                 bbox = [b[0], b[1], b[2], b[3]]
                 label, text = b[6], b[4]
+                element = None
                 extra_data = {"bbox": bbox}
-                metadata = ElementMetadata(extra_data=extra_data)
-                if label == TITLE_ID:
-                    element = Title(text=text, metadata=meta)
-                elif label == TEXT_ID:
-                    element = Text(text=text, metadata=meta)
-                elif label == TABLE_ID:
+
+                if label == TABLE_ID:
                     html = b[-1]
                     clean_html = clean_html_table(html)
-                    meta = ElementMetadata(text_as_html=clean_html, extra_data=extra_data)
-                    element = Table(text=text, metadata=meta)
+                    extra_data.update({"types": ["table"]})
+                    metadata = ElementMetadata(text_as_html=clean_html, extra_data=extra_data)
+                    element = Table(text=text, metadata=metadata)
                 else:
-                    element = NarrativeText(text=text, metadata=meta)
+                    line_bboxes = b[5]
+                    lines = b[-1]
+                    line_cnt = len(lines)
+                    if lang == "zh":
+                        extra_data.update({"pages": [idx] * line_cnt})
+                        line_chars_cnt = [len(line) for line in lines]
+                        indexes = []
+                        prev_ind = 0
+                        for cnt in line_chars_cnt:
+                            s = prev_ind
+                            e = prev_ind + cnt - 1
+                            indexes.append([s, e])
+                            s = e + 1
+                        extra_data.update({"indexes": indexes})
+
+                    if label == TITLE_ID:
+                        extra_data.update({"types": ["title"] * line_cnt})
+                        metadata = ElementMetadata(extra_data=extra_data)
+                        element = Title(text=text, metadata=metadata)
+                    elif label == TEXT_ID:
+                        extra_data.update({"types": ["paragraph"] * line_cnt})
+                        metadata = ElementMetadata(extra_data=extra_data)
+                        element = Text(text=text, metadata=meta)
+                    else:
+                        extra_data.update({"types": ["paragraph"] * line_cnt})
+                        metadata = ElementMetadata(extra_data=extra_data)
+                        element = NarrativeText(text=text, metadata=meta)
 
                 page.elements.append(element)
             pages.append(page)
@@ -1020,7 +1044,7 @@ class PDFDocument(Document):
                         print(f"process {count} pages used {elapse}sec...")
 
         groups = self._allocate_continuous(groups, lang)
-        pages = self._save_to_pages(groups, page_inds)
+        pages = self._save_to_pages(groups, page_inds, lang)
         return pages
 
     @property
