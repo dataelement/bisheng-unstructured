@@ -16,15 +16,15 @@ from bisheng_unstructured.staging.base import convert_to_isd
 from .types import UnstructuredInput, UnstructuredOutput
 
 
-def partition_pdf(filename, model_params, part_params={}, **kwargs):
-    doc = PDFDocument(file=filename, model_params=model_params, **part_params, **kwargs)
-    doc.pages
+def partition_pdf(filename, model_params, **kwargs):
+    doc = PDFDocument(file=filename, model_params=model_params, **kwargs)
+    _ = doc.pages
     return doc.elements
 
 
-def partition_image(filename, model_params, part_params={}, **kwargs):
-    doc = ImageDocument(file=filename, model_params=model_params, **part_params, **kwargs)
-    doc.pages
+def partition_image(filename, model_params, **kwargs):
+    doc = ImageDocument(file=filename, model_params=model_params, **kwargs)
+    _ = doc.pages
     return doc.elements
 
 
@@ -52,17 +52,17 @@ class Pipeline(object):
     def predict(self, inp: UnstructuredInput) -> UnstructuredOutput:
         if inp.file_type not in PARTITION_MAP:
             raise Exception(f"file type[{inp.file_type}] not supported")
-
         filename = inp.file_path
         file_type = inp.file_type
-        part_params = inp.parameters
+        # part_params = inp.parameters
         part_inp = {"filename": filename, **inp.parameters}
         part_func = PARTITION_MAP.get(file_type)
         if part_func == partition_pdf or part_func == partition_image:
             part_inp.update({"model_params": self.pdf_model_params})
-
         try:
             elements = part_func(**part_inp)
+            for e in elements:
+                print("e", e.to_dict())
             mode = inp.mode
             if mode == "partition":
                 isd = convert_to_isd(elements)

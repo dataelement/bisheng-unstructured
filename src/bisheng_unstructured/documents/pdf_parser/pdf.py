@@ -896,9 +896,11 @@ class PDFDocument(Document):
 
                 if c0 > LINE_FULL_THRESHOLD and c1 < START_THRESHOLD and c2 < SIMI_HEIGHT_THRESHOLD:
                     new_text = join_lines([b0[4], b1[4]], lang)
-
-                    joined_lines = b0[-1] + b1[-1]
-                    joined_bboxes = b0[5] + b1[5]
+                    # print('---join text', b0[-1], b1[-1])
+                    # joined_lines = b0[-1] + b1[-1]
+                    joined_lines = np.hstack([b0[-1], b1[-1]])
+                    joined_bboxes = np.vstack([b0[5], b1[5]])
+                    # joined_bboxes = b0[5] + b1[5]
                     new_block = (
                         b1[0],
                         b1[1],
@@ -944,28 +946,34 @@ class PDFDocument(Document):
                 bbox = [b[0], b[1], b[2], b[3]]
                 label, text = b[6], b[4]
                 element = None
-                extra_data = {"bbox": bbox}
+                extra_data = {"bboxes": [bbox]}
 
                 if label == TABLE_ID:
                     html = b[-1]
                     clean_html = clean_html_table(html)
-                    extra_data.update({"types": ["table"]})
+                    extra_data.update({"types": ["table"], "pages": [idx]})
+                    prev_ind = 0
+                    s = prev_ind
+                    e = prev_ind + len(text) - 1
+                    indexes = [[s, e]]
+                    extra_data.update({"indexes": indexes})
                     metadata = ElementMetadata(text_as_html=clean_html, extra_data=extra_data)
                     element = Table(text=text, metadata=metadata)
                 else:
-                    line_bboxes = b[5]
+                    prev_ind = 0
+                    line_bboxes = [b.tolist() for b in b[5]]
                     lines = b[-1]
                     line_cnt = len(lines)
-                    if lang == "zh":
+                    extra_data.update({"bboxes": line_bboxes})
+                    if True or lang == "zh":  # for join test only
                         extra_data.update({"pages": [idx] * line_cnt})
                         line_chars_cnt = [len(line) for line in lines]
                         indexes = []
-                        prev_ind = 0
                         for cnt in line_chars_cnt:
                             s = prev_ind
                             e = prev_ind + cnt - 1
                             indexes.append([s, e])
-                            s = e + 1
+                            prev_ind = e + 1
                         extra_data.update({"indexes": indexes})
 
                     if label == TITLE_ID:
@@ -975,11 +983,11 @@ class PDFDocument(Document):
                     elif label == TEXT_ID:
                         extra_data.update({"types": ["paragraph"] * line_cnt})
                         metadata = ElementMetadata(extra_data=extra_data)
-                        element = Text(text=text, metadata=meta)
+                        element = Text(text=text, metadata=metadata)
                     else:
                         extra_data.update({"types": ["paragraph"] * line_cnt})
                         metadata = ElementMetadata(extra_data=extra_data)
-                        element = NarrativeText(text=text, metadata=meta)
+                        element = NarrativeText(text=text, metadata=metadata)
 
                 page.elements.append(element)
             pages.append(page)
