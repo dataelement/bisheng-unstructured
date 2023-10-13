@@ -19,5 +19,15 @@ def test_creator2():
     pdf_creator.render(image_file, output_filename)
 
 
-test_creator()
-test_creator2()
+def test_creator3():
+    image_file = "./examples/docs/yyzz-sample.jpg"
+    output_filename = "./data/yyzz-sample.pdf"
+
+    model_params = {}
+    pdf_creator = PdfCreator(model_params)
+    pdf_creator.render(image_file, output_filename)
+
+
+# test_creator()
+# test_creator2()
+test_creator3()

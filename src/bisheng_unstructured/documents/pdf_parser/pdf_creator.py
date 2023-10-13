@@ -53,6 +53,8 @@ class PdfCreator(object):
 
     Refer: omni-read-infrastructure/src/main/java/org/czhouyi/omniread/
       infrastructure/adaptors/PdfRepositoryImpl.java
+
+    # Pymupdf has not character spacing api, replace PdfCreator with java pdfbox
     """
 
     def __init__(self, model_params: dict):
@@ -142,14 +144,19 @@ class PdfCreator(object):
             rect = get_hori_rect(bbox)
             # https://github.com/pymupdf/PyMuPDF/issues/259
             # rect = rescale_rect(rect, scale)
-            # print('---rect', page.rect, rect, gap, realWidth)
+            # print('---rect', page.rect, rect, gap, realWidth, text)
             if gap > gap_threhold:
+                continue
                 lineWidth += gap if is_zh else gap / 3
                 if lineWidth + rect[0] >= page.rect.width:
                     lineWidth = page.rect.width - rect[0] - x_right_delta
 
                 fontSize1, realWidth = self.compute_font_size(font, initFontSize, text, lineWidth)
                 # print('---font', fontSize, fontSize1)
+                if fontSize1 > gap:
+                    realWidth = rect[2] - rect[0]
+                    x_right_delta = fontSize1
+
                 rect_delta = [
                     rect[0],
                     rect[1] + y_delta,
@@ -168,6 +175,12 @@ class PdfCreator(object):
                 )
 
             else:
+                h = rect[3] - rect[1]
+                if h >= fontSize:
+                    fontSize = int(fontSize * 0.8)
+
+                y_delta = 0
+                x_right_delta = 10
                 rect_delta = [
                     rect[0] + x_delta,
                     rect[1] + y_delta,
@@ -175,6 +188,7 @@ class PdfCreator(object):
                     rect[3] + y_delta,
                 ]
                 fill_rect = fitz.Rect(*rect_delta)
+                # print('---fill textbox', fill_rect, text, fontSize)
                 writer.fill_textbox(
                     fill_rect,
                     text,
@@ -224,7 +238,7 @@ class PdfCreator(object):
         xref_text = doc.add_ocg("Texts", on=True, intent=["View", "Design"], usage="Artwork")
 
         page, scale = self.render_image(doc, image_file, xref_image)
-        self.render_text(page, image_file, scale, xref_text)
+        # self.render_text(page, image_file, scale, xref_text)
 
         if to_bytes:
             return doc.tobytes()
