@@ -109,6 +109,27 @@ def order_by_tbyx(block_info, th=10):
     return res
 
 
+def order_by_tbyx_v2(block_info, th=10):
+    """
+    block_info: [Block+]
+    th: threshold of the position threshold
+    """
+    # sort using y1 first and then x1
+    res = sorted(block_info, key=lambda b: (b.bbox[1], b.bbox[0]))
+    for i in range(len(res) - 1):
+        for j in range(i, 0, -1):
+            # restore the order using the
+            bbox_jnext = res[j + 1].bbox
+            bbox_j = res[j].bbox
+            if abs(bbox_jnext[1] - bbox_j[1]) < th and (bbox_jnext[0] < bbox_j[0]):
+                tmp = deepcopy(res[j])
+                res[j] = deepcopy(res[j + 1])
+                res[j + 1] = deepcopy(tmp)
+            else:
+                break
+    return res
+
+
 def is_eng_word(word):
     return bool(ENG_WORD.search(word))
 
@@ -218,6 +239,27 @@ class Segment:
             free_segs.append((x0, x1))
 
         return free_segs
+
+
+@dataclass
+class Block:
+    bbox: List[float]
+    text: str
+    block_no: int
+    block_type: str
+    block_index: int
+    line_bboxes: List[List[float]] = None
+    line_texts: List[str] = None
+    line_indexes: List[int] = None
+    html_text: str = None
+    block_cate: str = None
+
+    def __init__(self, *args):
+        # assert len(args) == 7, 'error args'
+        self.bbox = [args[0], args[1], args[2], args[3]]
+        self.text = args[4]
+        self.block_no = args[5]
+        self.block_type = args[6]
 
 
 class PDFDocument(Document):
@@ -499,6 +541,7 @@ class PDFDocument(Document):
         else:
             blocks, words = self._extract_blocks_from_image(b64_image)
 
+        blocks = [Block(*b) for b in blocks]
         # print('---line blocks---')
         # for b in blocks:
         #     print(b)
@@ -510,7 +553,7 @@ class PDFDocument(Document):
             is_rotated = c1 and c2
             # print('c1/c2', c1, c2)
             if is_rotated:
-                new_blocks = []
+                # new_blocks = []
                 new_words = []
                 for b, w in zip(blocks, words_info):
                     bbox = np.asarray([b[0], b[1], b[2], b[3]])
@@ -519,8 +562,9 @@ class PDFDocument(Document):
                     aug_bbox = np.hstack([aug_bbox, padding])
                     bb = np.dot(aug_bbox, rotation_matrix).reshape(-1)
                     bb = norm_rect(bb)
-                    info = (bb[0], bb[1], bb[2], bb[3], b[4], b[5], b[6])
-                    new_blocks.append(info)
+                    # info = (bb[0], bb[1], bb[2], bb[3], b[4], b[5], b[6])
+                    b.bbox = [bb[0], bb[1], bb[2], bb[3]]
+                    # new_blocks.append(info)
 
                     # process for words
                     words_text, words_bb = w
@@ -540,7 +584,7 @@ class PDFDocument(Document):
 
                     new_words.append((words_text, new_words_bb))
 
-                blocks = new_blocks
+                # blocks = new_blocks
                 words = new_words
 
         # if not self.with_columns:
@@ -554,10 +598,15 @@ class PDFDocument(Document):
         text_ploys = []
         text_rects = []
         texts = []
+        # for b in blocks:
+        #     texts.append(b[4])
+        #     text_ploys.append(Rect(b[0], b[1], b[2], b[3]))
+        #     text_rects.append([b[0], b[1], b[2], b[3]])
+
         for b in blocks:
-            texts.append(b[4])
-            text_ploys.append(Rect(b[0], b[1], b[2], b[3]))
-            text_rects.append([b[0], b[1], b[2], b[3]])
+            texts.append(b.text)
+            text_ploys.append(Rect(*b.bbox))
+            text_rects.append(b.bbox)
 
         text_rects = np.asarray(text_rects)
         texts = np.asarray(texts)
@@ -628,7 +677,17 @@ class PDFDocument(Document):
                 rs = text_rects[ind]
                 ord_ind = np.min(ori_orders)
                 mask[ind] = 1
-                new_block_info.append((rect[0], rect[1], rect[2], rect[3], ts, rs, ind, ord_ind))
+
+                block_info = Block(
+                    bbox=rect,
+                    text=None,
+                    block_index=ord_ind,
+                    line_bboxes=rs,
+                    line_texts=ts,
+                    line_indexes=ind,
+                )
+                new_block_info.append(block_info)
+                # new_block_info.append((rect[0], rect[1], rect[2], rect[3], ts, rs, ind, ord_ind))
 
             elif np.all(mask[start:end] == 0):
                 rect = merge_rects(text_rects[start:end])
@@ -643,21 +702,46 @@ class PDFDocument(Document):
                     ts = ts[arg_ind]
                     rs = rs[arg_ind]
 
-                pos = np.arange(start, end)
+                ind = np.arange(start, end)
                 mask[start:end] = 1
-                new_block_info.append((rect[0], rect[1], rect[2], rect[3], ts, rs, pos, ord_ind))
+
+                block_info = Block(
+                    bbox=rect,
+                    text=None,
+                    block_index=ord_ind,
+                    line_bboxes=rs,
+                    line_texts=ts,
+                    line_indexes=ind,
+                )
+                new_block_info.append(block_info)
+
+                # new_block_info.append((rect[0], rect[1], rect[2], rect[3], ts, rs, ind, ord_ind))
 
         for i in range(texts_cnt):
             if mask[i] == 0:
                 b = blocks[i]
-                r = np.asarray([b[0], b[1], b[2], b[3]])
+                # r = np.asarray([b[0], b[1], b[2], b[3]])
+                rs = np.asarray([[b[0], b[1], b[2], b[3]]])
+                ts = np.asarray([texts[i]])
                 ord_ind = b[-2]
-                new_block_info.append((b[0], b[1], b[2], b[3], [texts[i]], [r], [i], ord_ind))
+
+                block_info = Block(
+                    bbox=rect,
+                    text=None,
+                    block_index=ord_ind,
+                    line_bboxes=rs,
+                    line_texts=ts,
+                    line_indexes=[i],
+                )
+                new_block_info.append(block_info)
+
+                # new_block_info.append((b[0], b[1], b[2], b[3], [texts[i]], [r], [i], ord_ind))
 
         if self.with_columns:
-            new_blocks = sorted(new_block_info, key=lambda x: x[-1])
+            # new_blocks = sorted(new_block_info, key=lambda x: x[-1])
+            new_blocks = sorted(new_block_info, key=lambda x: x.block_index)
         else:
-            new_blocks = order_by_tbyx(new_block_info)
+            new_blocks = order_by_tbyx_v2(new_block_info)
 
         # print('\n\n---new blocks---')
         # for idx, b in enumerate(new_blocks):
@@ -702,7 +786,9 @@ class PDFDocument(Document):
 
             if sem_label == TABLE_ID:
                 b = new_blocks[j]
-                b_inds = b[-2]
+                # b_inds = b[-2]
+                b_inds = b.line_indexes
+
                 texts = []
                 bboxes = []
                 for k in b_inds:
@@ -740,7 +826,8 @@ class PDFDocument(Document):
             if not table_result["htmls"]:
                 # table layout parse failed, manually construce table
                 b = new_blocks[block_ind]
-                html = transform_list_to_table(b[4])
+                # html = transform_list_to_table(b[4])
+                html = transform_list_to_table(b.line_texts)
                 table_layout.append((block_ind, html, h_bbox))
                 # print('---missing table---', block_ind, html)
             else:
@@ -751,37 +838,60 @@ class PDFDocument(Document):
             text = table_md["text"]
             html = table_md["html"]
             b = new_blocks[i]
-            new_blocks[i] = (
-                h_bbox[0],
-                h_bbox[1],
-                h_bbox[2],
-                h_bbox[3],
-                text,
-                b[5],
-                b[6],
-                TABLE_ID,
-                html,
-            )
+            b.text = text
+            b.html_text = html
+            b.block_cate = TABLE_ID
+            # new_blocks[i] = (
+            #     h_bbox[0],
+            #     h_bbox[1],
+            #     h_bbox[2],
+            #     h_bbox[3],
+            #     text,
+            #     b[5],
+            #     b[6],
+            #     TABLE_ID,
+            #     html,
+            # )
 
         # print(texts_labels)
         # filter the unused element
+        # filtered_blocks = []
+        # for label, b in zip(texts_labels, new_blocks):
+        #     ori_i = b[6][0]
+        #     ori_b = blocks[ori_i]
+        #     block_type = ori_b[-1]
+        #     if block_type == IMG_BLOCK_TYPE:
+        #         continue
+
+        #     if np.all([len(t) == 0 for t in b[4]]):
+        #         continue
+
+        #     if label == TABLE_ID:
+        #         filtered_blocks.append((b[0], b[1], b[2], b[3], b[4], b[5], b[7], b[8]))
+
+        #     elif label in effective_class_inds:
+        #         text = join_lines(b[4], False, lang)
+        #         filtered_blocks.append((b[0], b[1], b[2], b[3], text, b[5], label, b[4]))
+
         filtered_blocks = []
         for label, b in zip(texts_labels, new_blocks):
-            ori_i = b[6][0]
+            ori_i = b.line_indexes[0]
             ori_b = blocks[ori_i]
-            block_type = ori_b[-1]
+            block_type = ori_b.block_type
             if block_type == IMG_BLOCK_TYPE:
                 continue
 
-            if np.all([len(t) == 0 for t in b[4]]):
+            if np.all([len(t) == 0 for t in b.line_texts]):
                 continue
 
             if label == TABLE_ID:
-                filtered_blocks.append((b[0], b[1], b[2], b[3], b[4], b[5], b[7], b[8]))
+                filtered_blocks.append(b)
 
             elif label in effective_class_inds:
                 text = join_lines(b[4], False, lang)
-                filtered_blocks.append((b[0], b[1], b[2], b[3], text, b[5], label, b[4]))
+                b.text = text
+                b.block_cate = label
+                filtered_blocks.append(b)
 
         # print('---filtered_blocks---')
         # for b in filtered_blocks:

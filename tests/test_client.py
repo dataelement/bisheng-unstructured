@@ -54,8 +54,21 @@ def test5():
     print(resp)
 
 
+def test6():
+    url = "http://192.168.106.12:10002/v1/etl4llm/predict"
+    filename = "./examples/docs/maoxuan_sample1.jpg"
+    output = "./temp/maoxuan_sample1_v1.pdf"
+    b64_data = base64.b64encode(open(filename, "rb").read()).decode()
+    inp = dict(filename=os.path.basename(filename), b64_data=[b64_data], mode="topdf")
+    resp = requests.post(url, json=inp).json()
+    b64_data = resp["b64_pdf"]
+    with open(output, "wb") as fout:
+        fout.write(base64.b64decode(b64_data))
+
+
 # test1()
 # test2()
 # test3()
 # test4()
-test5()
+# test5()
+test6()

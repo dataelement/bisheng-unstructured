@@ -5,5 +5,8 @@
         "rowcol_model_ep": "http://192.168.106.12:9001/v2.1/models/elem_table_rowcol_detect_v1/infer",
         "table_model_ep": "http://192.168.106.12:9001/v2.1/models/elem_table_detect_v1/infer",
         "ocr_model_ep": ""
+    },
+    "topdf_model_params": {
+        "ocr_model_ep": ""
     }
 }
