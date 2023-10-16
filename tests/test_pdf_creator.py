@@ -28,6 +28,33 @@ def test_creator3():
     pdf_creator.render(image_file, output_filename)
 
 
+def test_creator4():
+    image_file = "./examples/docs/危化品经营许可证_3.jpg"
+    output_filename = "./data/危化品经营许可证_3.pdf"
+
+    model_params = {}
+    pdf_creator = PdfCreator(model_params)
+    pdf_creator.render(image_file, output_filename)
+
+
+def test_dpi():
+    import fitz
+
+    file_path = "./data/危化品经营许可证_3.pdf"
+    fitz_doc = fitz.open(file_path)
+    page = fitz_doc.load_page(0)
+    mat = fitz.Matrix(1, 1)
+    pm = page.get_pixmap(matrix=mat, alpha=False)
+    bytes_img = pm.tobytes()
+    with open("./data/危化品经营许可证_3.png", "wb") as fout:
+        fout.write(bytes_img)
+
+    print("---", pm.width, pm.height, pm.xres, pm.yres)
+    # bytes_img = pm.getPNGData()
+
+
 # test_creator()
 # test_creator2()
-test_creator3()
+# test_creator3()
+test_creator4()
+test_dpi()

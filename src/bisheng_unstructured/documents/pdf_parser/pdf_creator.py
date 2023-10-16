@@ -1,10 +1,12 @@
 """Pdf Creator with multiple layers"""
 import base64
+import io
 import math
 import re
 
 import fitz
 import numpy as np
+from PIL import Image, ImageOps
 
 from bisheng_unstructured.models import OCRAgent
 
@@ -46,6 +48,30 @@ def banjiao_to_quanjiao(texts):
         new_texts.append("".join(chars))
 
     return new_texts
+
+
+def reorient_image(im):
+    try:
+        image_exif = im._getexif()
+        image_orientation = image_exif[274]
+        if image_orientation in (2, "2"):
+            return im.transpose(Image.FLIP_LEFT_RIGHT)
+        elif image_orientation in (3, "3"):
+            return im.transpose(Image.ROTATE_180)
+        elif image_orientation in (4, "4"):
+            return im.transpose(Image.FLIP_TOP_BOTTOM)
+        elif image_orientation in (5, "5"):
+            return im.transpose(Image.ROTATE_90).transpose(Image.FLIP_TOP_BOTTOM)
+        elif image_orientation in (6, "6"):
+            return im.transpose(Image.ROTATE_270)
+        elif image_orientation in (7, "7"):
+            return im.transpose(Image.ROTATE_270).transpose(Image.FLIP_TOP_BOTTOM)
+        elif image_orientation in (8, "8"):
+            return im.transpose(Image.ROTATE_90)
+        else:
+            return im
+    except (KeyError, AttributeError, TypeError, IndexError):
+        return im
 
 
 class PdfCreator(object):
@@ -209,10 +235,28 @@ class PdfCreator(object):
 
         writer.write_text(page, oc=xref, render_mode=3)
 
+    def render_image_v0(self, doc, image_file, xref):
+        img = Image.open(image_file)
+        img = reorient_image(img)
+        byte_arr = io.BytesIO()
+        img.save(byte_arr, format="PNG")
+        pil_bytes = byte_arr.getvalue()
+        # pil_bytes = open(image_file, 'rb').read()
+
+        width = img.width
+        height = img.height
+        scale = (1, 1)
+        new_rect = fitz.Rect(0, 0, width, height)
+        page = doc.new_page(width=width, height=height)
+        page.insert_image(new_rect, stream=pil_bytes, oc=xref)
+        # print('---dpi', width, height, scale)
+        return page, scale
+
     def render_image(self, doc, image_file, xref):
         img = fitz.open(image_file)
         rect = img[0].rect
-        pixmap = img[0].get_pixmap()
+        mat = fitz.Matrix(1, 1)
+        pixmap = img[0].get_pixmap(matrix=mat)
         pdfbytes = img.convert_to_pdf()
         img.close()
 
@@ -225,8 +269,9 @@ class PdfCreator(object):
         width = int(rect.width * scaleX)
         height = int(rect.height * scaleY)
         scale = (scaleX, scaleY)
+        # print('---dpi', scale, rect, pixmap.xres, pixmap.yres, pixmap.width, pixmap.height)
         new_rect = fitz.Rect(0, 0, width, height)
-        imgPDF = fitz.open("pdf", pdfbytes)
+        imgPDF = fitz.open("pdf", pdfbytes, dpi=dpiX)
         page = doc.new_page(width=width, height=height)
         page.show_pdf_page(new_rect, imgPDF, 0, oc=xref)
         return page, scale
@@ -237,7 +282,8 @@ class PdfCreator(object):
         xref_image = doc.add_ocg("Graphics", on=True, intent=["View", "Design"], usage="Artwork")
         xref_text = doc.add_ocg("Texts", on=True, intent=["View", "Design"], usage="Artwork")
 
-        page, scale = self.render_image(doc, image_file, xref_image)
+        page, scale = self.render_image_v0(doc, image_file, xref_image)
+        # page, scale = self.render_image(doc, image_file, xref_image)
         # self.render_text(page, image_file, scale, xref_text)
 
         if to_bytes:

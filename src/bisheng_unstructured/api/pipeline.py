@@ -35,7 +35,7 @@ PARTITION_MAP = {
     "png": partition_image,
     "jpeg": partition_image,
     "jpg": partition_image,
-    "tiff": partition_image,
+    "tif": partition_image,
     "bmp": partition_image,
     "doc": partition_doc,
     "docx": partition_docx,
