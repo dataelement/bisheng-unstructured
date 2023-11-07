@@ -55,6 +55,12 @@ class Pipeline(object):
         topdf_model_params = self.config.get("topdf_model_params", {})
         self.pdf_creator = Any2PdfCreator(topdf_model_params)
 
+    def update_config(self, config_dict):
+        self.config = config_dict
+        self.pdf_model_params = self.config.get("pdf_model_params")
+        topdf_model_params = self.config.get("topdf_model_params", {})
+        self.pdf_creator = Any2PdfCreator(topdf_model_params)
+
     def to_pdf(self, inp: UnstructuredInput) -> UnstructuredOutput:
         try:
             output = self.pdf_creator.run(inp.file_path, inp.file_type)
@@ -79,8 +85,8 @@ class Pipeline(object):
             part_inp.update({"model_params": self.pdf_model_params})
         try:
             elements = part_func(**part_inp)
-            for e in elements:
-                print("e", e.to_dict())
+            # for e in elements:
+            #     print("e", e.to_dict())
             mode = inp.mode
             if mode == "partition":
                 isd = convert_to_isd(elements)

@@ -20,3 +20,7 @@ class UnstructuredOutput(BaseModel):
     html_text: Optional[str] = None
     partitions: List[Dict[str, Any]] = []
     b64_pdf: Optional[str] = None
+
+
+class ConfigInput(BaseModel):
+    pdf_model_params: Dict[str, Any]

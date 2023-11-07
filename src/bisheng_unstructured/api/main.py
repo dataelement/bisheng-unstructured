@@ -9,7 +9,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import ORJSONResponse
 
 from .pipeline import Pipeline
-from .types import UnstructuredInput, UnstructuredOutput
+from .types import ConfigInput, UnstructuredInput, UnstructuredOutput
 
 # Fastapi App
 
@@ -53,6 +53,12 @@ app = create_app()
 
 config_file = "./config/config.json"
 pipeline = Pipeline(config_file)
+
+
+@app.post("/v1/config/update")
+async def update_config(inp: ConfigInput):
+    pipeline.update_config(inp.dict())
+    return {"status": "OK"}
 
 
 @app.post("/v1/etl4llm/predict", response_model=UnstructuredOutput)
