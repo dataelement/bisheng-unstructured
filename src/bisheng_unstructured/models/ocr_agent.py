@@ -7,8 +7,7 @@ import requests
 # OCR Agent Version 0.1, update at 2023.08.18
 class OCRAgent(object):
     def __init__(self, **kwargs):
-        url = kwargs.get("url", "http://192.168.106.12:36001")
-        self.ep = f"{url}/v2/idp/idp_app/infer"
+        self.ep = kwargs.get("elem_ocr_ep")
         self.client = requests.Session()
         self.timeout = kwargs.get("timeout", 10000)
         self.params = {
@@ -19,9 +18,15 @@ class OCRAgent(object):
         }
 
         self.scene_mapping = {
-            "doc": {"det": "general_text_det_mrcnn_v1.0", "recog": "transformer-blank-v0.2-faster"},
-            "form": {"det": "mrcnn-v5.1", "recog": "transformer-blank-v0.2-faster"},
-            "hand": {"det": "mrcnn-v5.1", "recog": "transformer-hand-v1.16-faster"},
+            "doc": {"det": "general_text_det_mrcnn_v2.0", "recog": "transformer-blank-v0.2-faster"},
+            "form": {
+                "det": "general_text_det_mrcnn_v2.0",
+                "recog": "transformer-blank-v0.2-faster",
+            },
+            "hand": {
+                "det": "general_text_det_mrcnn_v2.0",
+                "recog": "transformer-hand-v1.16-faster",
+            },
         }
 
     def predict(self, inp):

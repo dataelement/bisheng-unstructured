@@ -37,6 +37,15 @@ def test_creator4():
     pdf_creator.render(image_file, output_filename)
 
 
+def test_creator5():
+    image_file = "./examples/docs/big_image.jpg"
+    output_filename = "./data/big_image.pdf"
+
+    model_params = {}
+    pdf_creator = PdfCreator(model_params)
+    pdf_creator.render(image_file, output_filename)
+
+
 def test_dpi():
     import fitz
 
@@ -56,5 +65,7 @@ def test_dpi():
 # test_creator()
 # test_creator2()
 # test_creator3()
-test_creator4()
-test_dpi()
+# test_creator4()
+test_creator5()
+
+# test_dpi()

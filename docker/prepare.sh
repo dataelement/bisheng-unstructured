@@ -22,8 +22,8 @@ function prepare_env() {
 }
 
 function install_deps() {
-  # apt install -y python3-dev python3-pip git
-  # pip3 install git+https://github.com/pypdfium2-team/ctypesgen@pypdfium2
+  apt install -y python3-dev python3-pip git
+  pip3 install git+https://github.com/pypdfium2-team/ctypesgen@pypdfium2
   pip3 install -r requirements.txt -i https://mirrors.tencent.com/pypi/simple
   python3 -c "import nltk; nltk.download('punkt')" && \
     python3 -c "import nltk; nltk.download('averaged_perceptron_tagger')"
@@ -37,5 +37,4 @@ function twine_upload() {
 
 # prepare_env
 # install_deps
-twine_upload
-
+# twine_upload

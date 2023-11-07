@@ -238,18 +238,25 @@ class PdfCreator(object):
     def render_image_v0(self, doc, image_file, xref):
         img = Image.open(image_file)
         img = reorient_image(img)
+
+        max_longer_edge = 1600
+        width = img.width
+        height = img.height
+        ratio = max_longer_edge / max(width, height)
+        new_width = int(width * ratio)
+        new_height = int(height * ratio)
+
+        img = img.resize((new_width, new_height), Image.BILINEAR)
         byte_arr = io.BytesIO()
         img.save(byte_arr, format="PNG")
         pil_bytes = byte_arr.getvalue()
         # pil_bytes = open(image_file, 'rb').read()
 
-        width = img.width
-        height = img.height
         scale = (1, 1)
-        new_rect = fitz.Rect(0, 0, width, height)
-        page = doc.new_page(width=width, height=height)
+        new_rect = fitz.Rect(0, 0, new_width, new_height)
+        page = doc.new_page(width=new_width, height=new_height)
         page.insert_image(new_rect, stream=pil_bytes, oc=xref)
-        # print('---dpi', width, height, scale)
+        # print('---dpi', width, height, scale, new_rect)
         return page, scale
 
     def render_image(self, doc, image_file, xref):
