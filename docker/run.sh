@@ -9,4 +9,13 @@ function temp_build_image() {
 }
 
 
-temp_build_image
+function create_dev_image() {
+    image="dataelement/bisheng-unstructured:0.0.1"
+    docker run -itd --name bisheng-uns-v002-dev -p 50001:10001 \
+        -v /home/hanfeng:/home/hanfeng -v /home/public:/home/public \
+        $image bash
+}
+
+
+create_dev_image
+# temp_build_image
