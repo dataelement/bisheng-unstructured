@@ -57,8 +57,30 @@ pipeline = Pipeline(config_file)
 
 @app.post("/v1/config/update")
 async def update_config(inp: ConfigInput):
-    pipeline.update_config(inp.dict())
+    pdf_model_params_temp = {
+        "layout_ep": "http://{0}/v2.1/models/elem_layout_v1/infer",
+        "cell_model_ep": ("http://{0}/v2.1/models/elem_table_cell_detect_v1/infer"),
+        "rowcol_model_ep": ("http://{0}/v2.1/models/elem_table_rowcol_detect_v1/infer"),
+        "table_model_ep": "http://{0}/v2.1/models/elem_table_detect_v1/infer",
+        "ocr_model_ep": "http://{0}/v2.1/models/elem_ocr_collection_v3/infer",
+    }
+
+    if inp.rt_ep is not None:
+        pdf_model_params = {}
+        for k, v in pdf_model_params_temp.items():
+            pdf_model_params[k] = v.format(inp.rt_ep)
+
+        config_dict = {"pdf_model_params": pdf_model_params}
+    else:
+        config_dict = inp.dict()
+
+    pipeline.update_config(config_dict)
     return {"status": "OK"}
+
+
+@app.get("/v1/config")
+async def config():
+    return {"status": "OK", "config": pipeline.config}
 
 
 @app.post("/v1/etl4llm/predict", response_model=UnstructuredOutput)

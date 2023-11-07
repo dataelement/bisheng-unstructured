@@ -23,4 +23,5 @@ class UnstructuredOutput(BaseModel):
 
 
 class ConfigInput(BaseModel):
-    pdf_model_params: Dict[str, Any]
+    pdf_model_params: Optional[Dict[str, Any]] = None
+    rt_ep: Optional[str] = None
