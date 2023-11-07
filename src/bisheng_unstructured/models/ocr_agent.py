@@ -7,7 +7,7 @@ import requests
 # OCR Agent Version 0.1, update at 2023.08.18
 class OCRAgent(object):
     def __init__(self, **kwargs):
-        self.ep = kwargs.get("elem_ocr_ep")
+        self.ep = kwargs.get("ocr_model_ep")
         self.client = requests.Session()
         self.timeout = kwargs.get("timeout", 10000)
         self.params = {
@@ -18,8 +18,7 @@ class OCRAgent(object):
         }
 
         self.scene_mapping = {
-            "doc": {"det": "general_text_det_mrcnn_v2.0", "recog": "transformer-blank-v0.2-faster"},
-            "form": {
+            "print": {
                 "det": "general_text_det_mrcnn_v2.0",
                 "recog": "transformer-blank-v0.2-faster",
             },
@@ -30,7 +29,7 @@ class OCRAgent(object):
         }
 
     def predict(self, inp):
-        scene = inp.pop("scene", "doc")
+        scene = inp.pop("scene", "print")
         b64_image = inp.pop("b64_image")
         params = copy.deepcopy(self.params)
         params.update(self.scene_mapping[scene])

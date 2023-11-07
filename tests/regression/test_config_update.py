@@ -4,7 +4,8 @@ import requests
 
 
 def test_config_update():
-    uns_ep = os.environ.get("UNS_EP", "http://127.0.0.1:10001")
+    uns_ep = os.environ.get("UNS_EP", "127.0.0.1:10001")
+    uns_ep = f"http://{uns_ep}"
     ep = uns_ep + "/v1/config/update"
     rt_ep = "192.168.106.x:y"
     inp = {"rt_ep": rt_ep}
