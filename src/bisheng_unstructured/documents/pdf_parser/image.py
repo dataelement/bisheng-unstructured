@@ -45,16 +45,19 @@ class ImageDocument(PDFDocument):
         b64_data = base64.b64encode(blob.as_bytes()).decode()
         layout_inp = {"b64_image": b64_data}
         layout = self.layout_agent.predict(layout_inp)
-
+        page_inds = []
         blocks = self._allocate_semantic(None, layout, b64_data, self.is_scan, self.lang)
 
         if blocks:
             if self.with_columns:
                 sub_groups = self._divide_blocks_into_groups(blocks)
                 groups.extend(sub_groups)
+                for _ in sub_groups:
+                    page_inds.append(1)
             else:
                 groups.append(blocks)
+                page_inds.append(1)
 
         groups = self._allocate_continuous(groups, self.lang)
-        pages = self._save_to_pages(groups)
+        pages = self._save_to_pages(groups, page_inds, self.lang)
         return pages

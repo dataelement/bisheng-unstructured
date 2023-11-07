@@ -8,7 +8,7 @@ class UnstructuredInput(BaseModel):
     url: Optional[str] = None
     b64_data: Optional[List[str]] = None
     parameters: Optional[Dict] = {}
-    mode: str = "text"  # text, partition, vis
+    mode: str = "text"  # text, partition, vis, topdf
     file_path: Optional[str] = None
     file_type: Optional[str] = None
 
@@ -19,3 +19,4 @@ class UnstructuredOutput(BaseModel):
     text: Optional[str] = None
     html_text: Optional[str] = None
     partitions: List[Dict[str, Any]] = []
+    b64_pdf: Optional[str] = None
