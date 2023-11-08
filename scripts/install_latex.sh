@@ -14,7 +14,7 @@ function install_texlive() {
 
 
 function install_deps() {
-    apt-get install libfontconfig1
+    apt-get install libfontconfig1 fontconfig libreoffice
 }
 
 
@@ -31,8 +31,8 @@ function update_fonts() {
 
     EXTR_FONT_DIR="/home/hanfeng/tars/texlive_fonts"
     cp -fr ${EXTR_FONT_DIR} /usr/share/fonts/
-    mkfontscale  
-    mkfontdir  
+    # mkfontscale  
+    # mkfontdir  
     fc-cache -fsv
     # fc-cache -fv
     fc-list :lang=zh-cn
@@ -40,10 +40,24 @@ function update_fonts() {
 
 
 function install_pandoc() {
-    PANDOC_TAR_FILE="/home/hanfeng/tars/pandoc-3.1.9-linux-amd64.tar.gz"
-    tar zxf ${PANDOC_TAR_FILE} -C /opt/pandoc
-    echo "export PATH=/opt/pandoc/bin/:\$PATH" >> /root/.bashrc
+    # PANDOC_TAR_FILE="/home/hanfeng/tars/pandoc-3.1.9-linux-amd64.tar.gz"
+    # tar zxf ${PANDOC_TAR_FILE} -C /opt/pandoc
+
+    # pandoc template
+    # commit f7d8b629330074a4400d1f2795b101d14491c968 
+    # (HEAD -> master, tag: 3.1.9, origin/master, origin/HEAD)
+    
+    echo "export PATH=/opt/pandoc/pandoc-3.1.9/bin:\$PATH" >> /root/.bashrc
 }
 
 
-install_texlive
+function clean() {
+   echo "clean" 
+   apt-get clean &&  rm -rf /var/lib/apt/lists/* && rm -rf /root/.cache/pip
+}
+
+
+# update_fonts
+# install_texlive
+# install_pandoc
+clean

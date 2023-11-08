@@ -17,5 +17,14 @@ function create_dev_image() {
 }
 
 
-create_dev_image
+function temp_build_image_v002() {
+    image="dataelement/bisheng-unstructured:0.0.2"
+    docker rmi $image
+    docker commit -a "author@dataelem.com" -m "commit bisheng-unstructured image" bisheng-uns-v002-dev $image
+    #docker push $image
+}
+
+
+# create_dev_image
 # temp_build_image
+temp_build_image_v002

@@ -20,4 +20,23 @@ def test_part():
     print(resp)
 
 
-test_part()
+def test_any2pdf():
+    uns_ep = os.environ.get("UNS_EP", "127.0.0.1:10001")
+
+    url = f"http://{uns_ep}/v1/etl4llm/predict"
+    filename = "../../examples/docs/maoxuan_sample.docx"
+    b64_data = base64.b64encode(open(filename, "rb").read()).decode()
+    inp = dict(
+        filename=os.path.basename(filename),
+        b64_data=[b64_data],
+        mode="topdf",
+    )
+    resp = requests.post(url, json=inp).json()
+
+    assert resp["status_code"] == 200, resp
+    # with open('test.pdf', 'wb') as fout:
+    #     fout.write(base64.b64decode(resp['b64_pdf']))
+
+
+test_any2pdf()
+# test_part()
