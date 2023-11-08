@@ -17,7 +17,8 @@ def test_part():
         parameters={"start": 0, "n": 5},
     )
     resp = requests.post(url, json=inp).json()
-    print(resp)
+    assert resp["status_code"] == 200, resp
+    # print(resp)
 
 
 def test_any2pdf():
@@ -34,9 +35,20 @@ def test_any2pdf():
     resp = requests.post(url, json=inp).json()
 
     assert resp["status_code"] == 200, resp
+
+    filename = "../../examples/docs/maoxuan_sample.doc"
+    b64_data = base64.b64encode(open(filename, "rb").read()).decode()
+    inp = dict(
+        filename=os.path.basename(filename),
+        b64_data=[b64_data],
+        mode="topdf",
+    )
+    resp = requests.post(url, json=inp).json()
+
+    assert resp["status_code"] == 200, resp
     # with open('test.pdf', 'wb') as fout:
     #     fout.write(base64.b64decode(resp['b64_pdf']))
 
 
+test_part()
 test_any2pdf()
-# test_part()
