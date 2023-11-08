@@ -1,6 +1,7 @@
 import base64
 
 from bisheng_unstructured.documents.pdf_parser.pdf_creator import PdfCreator
+from bisheng_unstructured.topdf import DocxToPDF
 
 
 class Any2PdfCreator(object):
@@ -11,6 +12,8 @@ class Any2PdfCreator(object):
             "jpg": PdfCreator,
             "tiff": PdfCreator,
             "bmp": PdfCreator,
+            "doc": DocxToPDF,
+            "docx": DocxToPDF,
         }
         self.model_params = kwargs
 

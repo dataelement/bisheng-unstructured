@@ -70,13 +70,13 @@ class Pipeline(object):
             return UnstructuredOutput(status_code=400, status_message=str(e))
 
     def predict(self, inp: UnstructuredInput) -> UnstructuredOutput:
+        if inp.mode == "topdf":
+            return self.to_pdf(inp)
+
         if inp.file_type not in PARTITION_MAP:
             raise Exception(f"file type[{inp.file_type}] not supported")
         filename = inp.file_path
         file_type = inp.file_type
-
-        if inp.mode == "topdf":
-            return self.to_pdf(inp)
 
         # part_params = inp.parameters
         part_inp = {"filename": filename, **inp.parameters}
