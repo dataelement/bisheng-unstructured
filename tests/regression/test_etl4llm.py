@@ -20,6 +20,17 @@ def test_part():
     assert resp["status_code"] == 200, resp
     # print(resp)
 
+    filename = "../../examples/docs/maoxuan_sample1.jpg"
+    b64_data = base64.b64encode(open(filename, "rb").read()).decode()
+    inp = dict(
+        filename=os.path.basename(filename),
+        b64_data=[b64_data],
+        mode="partition",
+    )
+    resp = requests.post(url, json=inp).json()
+    assert resp["status_code"] == 200, resp
+    print("resp", resp)
+
 
 def test_any2pdf():
     uns_ep = os.environ.get("UNS_EP", "127.0.0.1:10001")
