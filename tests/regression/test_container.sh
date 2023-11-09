@@ -16,7 +16,7 @@ function test_container() {
   temp_ctn="bisheng_uns_v002_test"
 
   pushd $(cd $(dirname $0); pwd)
-  # docker run -p 10005:10001 -itd --workdir /opt/bisheng-unstructured --name ${temp_ctn} $image bash bin/entrypoint.sh
+  docker run -p 10005:10001 -itd --workdir /opt/bisheng-unstructured --name ${temp_ctn} $image bash bin/entrypoint.sh
   UNS_EP="127.0.0.1:10005"
 
   sleep 5

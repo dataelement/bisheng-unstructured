@@ -22,6 +22,6 @@ def test3():
     engine.render(input_file, output_file)
 
 
-test1()
-# test2()
+# test1()
+test2()
 # test3()

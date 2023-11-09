@@ -45,7 +45,6 @@ class ExcelToPDF(object):
                 filename = filename.rsplit(".", 1)[0] + ".xlsx"
                 input_file = os.path.join(temp_dir, filename)
 
-            print("input_file", input_file)
             temp_output_file = os.path.join(temp_dir, output_filename)
             wb = openpyxl.load_workbook(input_file)
             for ws in wb:

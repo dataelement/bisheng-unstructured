@@ -1,7 +1,7 @@
 import base64
 
 from bisheng_unstructured.documents.pdf_parser.pdf_creator import PdfCreator
-from bisheng_unstructured.topdf import DocxToPDFV1, ExcelToPDF, PptxToPDF
+from bisheng_unstructured.topdf import DocxToPDFV1, ExcelToPDF, PptxToPDF, Text2PDF
 
 
 class Any2PdfCreator(object):
@@ -18,6 +18,9 @@ class Any2PdfCreator(object):
             "pptx": PptxToPDF,
             "xlsx": ExcelToPDF,
             "xls": ExcelToPDF,
+            "txt": Text2PDF,
+            "md": Text2PDF,
+            "html": Text2PDF,
         }
         self.model_params = kwargs
 
