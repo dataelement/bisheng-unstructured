@@ -4,6 +4,7 @@ from typing import Dict
 from bisheng_unstructured.documents.html_utils import save_to_txt, visualize_html
 from bisheng_unstructured.documents.pdf_parser.image import ImageDocument
 from bisheng_unstructured.documents.pdf_parser.pdf import PDFDocument
+from bisheng_unstructured.partition.csv import partition_csv
 from bisheng_unstructured.partition.doc import partition_doc
 from bisheng_unstructured.partition.docx import partition_docx
 from bisheng_unstructured.partition.html import partition_html
@@ -11,6 +12,7 @@ from bisheng_unstructured.partition.md import partition_md
 from bisheng_unstructured.partition.ppt import partition_ppt
 from bisheng_unstructured.partition.pptx import partition_pptx
 from bisheng_unstructured.partition.text import partition_text
+from bisheng_unstructured.partition.tsv import partition_tsv
 from bisheng_unstructured.partition.xlsx import partition_xlsx
 from bisheng_unstructured.staging.base import convert_to_isd
 
@@ -36,6 +38,7 @@ PARTITION_MAP = {
     "jpeg": partition_image,
     "jpg": partition_image,
     "tif": partition_image,
+    "tiff": partition_image,
     "bmp": partition_image,
     "doc": partition_doc,
     "docx": partition_docx,
@@ -44,7 +47,9 @@ PARTITION_MAP = {
     "xlsx": partition_xlsx,
     "md": partition_md,
     "html": partition_html,
-    "text": partition_text,
+    "txt": partition_text,
+    "csv": partition_csv,
+    "tsv": partition_tsv,
 }
 
 

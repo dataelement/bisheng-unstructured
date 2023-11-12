@@ -11,6 +11,7 @@ class Any2PdfCreator(object):
             "jpeg": PdfCreator,
             "jpg": PdfCreator,
             "tiff": PdfCreator,
+            "tif": PdfCreator,
             "bmp": PdfCreator,
             "doc": DocxToPDFV1,
             "docx": DocxToPDFV1,

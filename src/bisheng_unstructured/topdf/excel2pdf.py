@@ -16,11 +16,14 @@ class ExcelToPDF(object):
             soffice --headless --convert-to xlsx --outdir
         """
 
+        cmd_template3 = "sed -e 's/\t/,/g' {0} > {1}"
+
         def _norm_cmd(cmd):
             return " ".join([p.strip() for p in cmd.strip().split()])
 
         self.cmd_template = _norm_cmd(cmd_template)
         self.cmd_template2 = _norm_cmd(cmd_template2)
+        self.cmd_template3 = cmd_template3
 
     @staticmethod
     def run(cmd):
@@ -35,11 +38,18 @@ class ExcelToPDF(object):
         type_ext = input_file.rsplit(".", 1)[-1]
         filename = os.path.basename(input_file)
         output_filename = filename.rsplit(".", 1)[0] + ".pdf"
-
-        assert type_ext in ["xlsx", "xls"]
+        assert type_ext in ["xlsx", "xls", "tsv", "csv"]
 
         with tempfile.TemporaryDirectory() as temp_dir:
-            if type_ext == "xls":
+            if type_ext in ["tsv"]:
+                csv_filename = filename.rsplit(".", 1)[0] + ".csv"
+                output_csv = os.path.join(temp_dir, csv_filename)
+                cmd = self.cmd_template3.format(input_file, output_csv)
+                ExcelToPDF.run(cmd)
+                input_file = output_csv
+                type_ext = "csv"
+
+            if type_ext in ["xls", "csv"]:
                 cmd = self.cmd_template2 + " {1} {0}".format(input_file, temp_dir)
                 ExcelToPDF.run(cmd)
                 filename = filename.rsplit(".", 1)[0] + ".xlsx"
