@@ -29,6 +29,6 @@ jobs:
         run: |
           tag=${{ github.ref_name }}
           ver=${tag:1}
-          pkg_ver=$(cat components_version.txt |grep bisheng-unstructured= | awk -F'=' '{print $2}')
+          pkg_ver=$(cat docker/components_version.txt |grep bisheng-unstructured= | awk -F'=' '{print $2}')
           docker build --build-arg BISHENG_UNS_VER=${pkg_ver} -t dataelement/bisheng-unstructured:${ver} -f docker/Dockerfile .
           docker push dataelement/bisheng-rt:${ver}
