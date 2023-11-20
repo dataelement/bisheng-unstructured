@@ -3,6 +3,12 @@ MAINTAINER "Dataelem inc."
 
 ARG BISHENG_UNS_VER=0.0.2
 
+# unset proxy
+ENV http_proxy=
+ENV https_proxy=
+ENV HTTP_PROXY=
+ENV HTTPS_PROXY=
+
 RUN pip install bisheng-unstructured==${BISHENG_UNS_VER}
 
 # Copy bins and configs
