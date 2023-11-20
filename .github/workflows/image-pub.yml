@@ -1,0 +1,34 @@
+name: Upload to Docker Hub
+
+on:
+  push:
+    # Sequence of patterns matched against refs/tags
+    branches:
+      - "r*"
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    #if: startsWith(github.event.ref, 'refs/tags')
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Login to DockerHub
+        uses: docker/login-action@v1
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      # Build bisheng-unstructured and push Docker hub
+      - name: Build bisheng-unstructrued and push
+        id: docker_build_unstructrued
+        run: |
+          tag=${{ github.ref_name }}
+          ver=${tag:1}
+          pkg_ver=$(cat components_version.txt |grep bisheng-unstructured= | awk -F'=' '{print $2}')
+          docker build --build-arg BISHENG_UNS_VER=${pkg_ver} -t dataelement/bisheng-unstructured:${ver} -f docker/Dockerfile .
+          docker push dataelement/bisheng-rt:${ver}
