@@ -54,7 +54,7 @@ class DocxToPDF(object):
 class DocxToPDFV1(object):
     def __init__(self, kwargs={}):
         cmd_template = """
-            soffice --headless --convert-to pdf --outdir {1} {0}
+            soffice --headless --convert-to pdf --outdir \"{1}\" \"{0}\"
         """
 
         def _norm_cmd(cmd):

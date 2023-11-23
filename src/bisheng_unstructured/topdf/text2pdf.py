@@ -98,7 +98,7 @@ class Text2PDF(object):
         """
 
         cmd_template2 = """
-            soffice --headless --convert-to pdf --outdir {1} {0}
+            soffice --headless --convert-to pdf --outdir \"{1}\" \"{0}\"
         """
 
         def _norm_cmd(cmd):

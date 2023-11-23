@@ -16,7 +16,7 @@ class ExcelToPDF(object):
             soffice --headless --convert-to xlsx --outdir
         """
 
-        cmd_template3 = "sed -e 's/\t/,/g' {0} > {1}"
+        cmd_template3 = 'sed -e \'s/\t/,/g\' "{0}" > "{1}"'
 
         def _norm_cmd(cmd):
             return " ".join([p.strip() for p in cmd.strip().split()])
@@ -50,7 +50,7 @@ class ExcelToPDF(object):
                 type_ext = "csv"
 
             if type_ext in ["xls", "csv"]:
-                cmd = self.cmd_template2 + " {1} {0}".format(input_file, temp_dir)
+                cmd = self.cmd_template2 + ' "{1}" "{0}"'.format(input_file, temp_dir)
                 ExcelToPDF.run(cmd)
                 filename = filename.rsplit(".", 1)[0] + ".xlsx"
                 input_file = os.path.join(temp_dir, filename)
@@ -64,7 +64,7 @@ class ExcelToPDF(object):
             input_file = os.path.join(temp_dir, filename)
             wb.save(input_file)
 
-            cmd = self.cmd_template + " {1} {0}".format(input_file, temp_dir)
+            cmd = self.cmd_template + ' "{1}" "{0}"'.format(input_file, temp_dir)
             ExcelToPDF.run(cmd)
 
             if output_file is not None:

@@ -80,7 +80,7 @@ setuptools.setup(
         exclude=("examples*", "tests*", "applications*", "model_zoo*"),
     ),
     package_dir={"": "./src"},
-    package_data={},
+    package_data={"": ["*.txt"]},
     setup_requires=[],
     install_requires=REQUIRED_PACKAGES,
     entry_points={},
