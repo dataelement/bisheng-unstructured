@@ -529,7 +529,7 @@ class PDFDocument(Document):
             is_rotated = c1 and c2
             # print('c1/c2', c1, c2)
             if is_rotated:
-                new_blocks = []
+                # new_blocks = []
                 new_words = []
                 for b, w in zip(blocks, words_info):
                     bbox = np.asarray(b.bbox)
@@ -538,10 +538,11 @@ class PDFDocument(Document):
                     aug_bbox = np.hstack([aug_bbox, padding])
                     bb = np.dot(aug_bbox, rotation_matrix).reshape(-1)
                     bb = norm_rect(bb)
-                    info = BlockInfo(
-                        [bb[0], bb[1], bb[2], bb[3]], b.block_text, b.block_no, b.block_type
-                    )
-                    new_blocks.append(info)
+                    # info = BlockInfo(
+                    #     [bb[0], bb[1], bb[2], bb[3]], b.block_text, b.block_no, b.block_type
+                    # )
+                    # new_blocks.append(info)
+                    b.bbox = [bb[0], bb[1], bb[2], bb[3]]
 
                     # process for words
                     words_text, words_bb = w
@@ -561,7 +562,7 @@ class PDFDocument(Document):
 
                     new_words.append((words_text, new_words_bb))
 
-                blocks = new_blocks
+                # blocks = new_blocks
                 words = new_words
 
         # if not self.with_columns:
@@ -652,7 +653,7 @@ class PDFDocument(Document):
                 # new_block_info.append((rect[0], rect[1], rect[2], rect[3], ts, rs, ind, ord_ind))
                 new_block_info.append(
                     BlockInfo(
-                        [rect[0], rect[1], rect[2], rect[3]], "", -1, "", ts, rs, ind, ord_ind
+                        [rect[0], rect[1], rect[2], rect[3]], "", -1, -1, ts, rs, ind, ord_ind
                     )
                 )
 
@@ -793,6 +794,7 @@ class PDFDocument(Document):
             b.bbox = [h_bbox[0], h_bbox[1], h_bbox[2], h_bbox[3]]
             b.layout_type = TABLE_ID
             b.html_text = html
+            b.block_text = text
 
             # new_blocks[i] = (
             #     h_bbox[0],
