@@ -33,7 +33,19 @@ function upload_image() {
 }
 
 
-# create_dev_image
+function run_dev_docker() {
+  image="dataelement/bisheng-unstructured:0.0.2"
+  cnt_name="bisheng_uns_v002_dev"
+  MOUNT="-v $HOME:$HOME -v /public:/public"
+  pushd $(cd $(dirname $0); pwd)
+  docker run -p 20001:10001 -itd --name ${cnt_name} $MOUNT $image bash
+}
+
+
+# create_dev_i
+# mage
 # temp_build_image
 # temp_build_image_v002
-upload_image
+# upload_image
+
+run_dev_docker

@@ -239,6 +239,7 @@ class PDFDocument(Document):
         n: int = None,
         verbose: bool = False,
         enhance_table: bool = True,
+        keep_text_in_image: bool = True,
         **kwargs,
     ) -> None:
         """Initialize with a file path."""
@@ -256,6 +257,7 @@ class PDFDocument(Document):
         self.text_elem_sep = text_elem_sep
         self.file = file
         self.enhance_table = enhance_table
+        self.keep_text_in_image = keep_text_in_image
         super().__init__()
 
     def _get_image_blobs(self, fitz_doc, pdf_reader, n=None, start=0):
@@ -489,6 +491,7 @@ class PDFDocument(Document):
         non_conti_class_ids = [6, 7, 8]
         TEXT_ID = 4
         TABLE_ID = 5
+        IMAGE_ID = 2
 
         if not is_scan:
             textpage = page.get_textpage()
@@ -778,6 +781,11 @@ class PDFDocument(Document):
 
             if label == TABLE_ID:
                 filtered_blocks.append((b[0], b[1], b[2], b[3], b[4], b[5], b[7], b[8]))
+
+            elif label == IMAGE_ID:
+                if self.keep_text_in_image:
+                    text = join_lines(b[4], False, lang)
+                    filtered_blocks.append((b[0], b[1], b[2], b[3], text, b[5], label, b[4]))
 
             elif label in effective_class_inds:
                 text = join_lines(b[4], False, lang)

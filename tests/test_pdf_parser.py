@@ -189,6 +189,32 @@ def test_pdf_doc8():
     # save_to_txt(elements, 'data/达梦数据库招股说明书-v1_1.txt')
 
 
+def test_pdf_doc9():
+    url = TEST_RT_URL
+    layout_ep = url + "elem_layout_v1/infer"
+    cell_model_ep = url + "elem_table_cell_detect_v1/infer"
+    rowcol_model_ep = url + "elem_table_rowcol_detect_v1/infer"
+    table_model_ep = url + "elem_table_detect_v1/infer"
+
+    model_params = {
+        "layout_ep": layout_ep,
+        "cell_model_ep": cell_model_ep,
+        "rowcol_model_ep": rowcol_model_ep,
+        "table_model_ep": table_model_ep,
+        "ocr_model_ep": f"{TEST_RT_URL}elem_ocr_collection_v3/infer",
+    }
+    print("model_params", model_params)
+
+    filename = "examples/docs/流动资金借款合同1.pdf"
+    pdf_doc = PDFDocument(file=filename, model_params=model_params, start=0, n=1, verbose=True)
+    pages = pdf_doc.pages
+    elements = pdf_doc.elements
+    for e in elements:
+        print("e", e.to_dict())
+    # visualize_html(elements, 'data/达梦数据库招股说明书-v1_1.html')
+    # save_to_txt(elements, 'data/达梦数据库招股说明书-v1_1.txt')
+
+
 # test_pdf_doc()
 # test_pdf_doc2()
 # test_pdf_doc3()
@@ -196,4 +222,6 @@ def test_pdf_doc8():
 # test_pdf_doc5()
 # test_pdf_doc6()
 # test_pdf_doc7()
-test_pdf_doc8()
+# test_pdf_doc8()
+
+test_pdf_doc9()
