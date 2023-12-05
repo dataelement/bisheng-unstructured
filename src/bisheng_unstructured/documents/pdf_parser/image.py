@@ -7,6 +7,8 @@ from bisheng_unstructured.models import LayoutAgent, OCRAgent, TableAgent, Table
 from .blob import Blob
 from .pdf import PDFDocument
 
+# from bisheng_unstructured.utils import Timer
+
 
 class ImageDocument(PDFDocument):
     def __init__(
@@ -16,6 +18,7 @@ class ImageDocument(PDFDocument):
         with_columns: bool = False,
         text_elem_sep: str = "\n",
         enhance_table: bool = True,
+        keep_text_in_image: bool = True,
         lang: str = "zh",
         verbose: bool = False,
         **kwargs
@@ -35,18 +38,25 @@ class ImageDocument(PDFDocument):
         self.is_scan = True
         self.support_rotate = False
         self.is_join_table = False
+        self.keep_text_in_image = keep_text_in_image
 
         super(PDFDocument, self).__init__()
 
     def load(self) -> List[Page]:
         """Load given path as pages."""
+        # timer = Timer()
         blob = Blob.from_path(self.file)
         groups = []
         b64_data = base64.b64encode(blob.as_bytes()).decode()
         layout_inp = {"b64_image": b64_data}
+        # timer.toc()
+
         layout = self.layout_agent.predict(layout_inp)
+        # timer.toc()
+
         page_inds = []
         blocks = self._allocate_semantic(None, layout, b64_data, self.is_scan, self.lang)
+        # timer.toc()
 
         if blocks:
             if self.with_columns:
@@ -58,6 +68,11 @@ class ImageDocument(PDFDocument):
                 groups.append(blocks)
                 page_inds.append(1)
 
+        # timer.toc()
         groups = self._allocate_continuous(groups, self.lang)
+
+        # timer.toc()
         pages = self._save_to_pages(groups, page_inds, self.lang)
+        # timer.toc()
+        # print('timers', timer.get())
         return pages

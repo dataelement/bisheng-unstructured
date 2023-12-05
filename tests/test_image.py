@@ -1,3 +1,5 @@
+import hashlib
+
 from bisheng_unstructured.documents.html_utils import save_to_txt, visualize_html
 from bisheng_unstructured.documents.pdf_parser.image import ImageDocument
 
@@ -24,8 +26,8 @@ def test_image():
     pages = doc.pages
     elements = doc.elements
 
-    visualize_html(elements, "data/maoxuan_intro_with_table.html")
-    save_to_txt(elements, "data/maoxuan_intro_with_table.txt")
+    visualize_html(elements, "data/maoxuan_intro_with_table2.html")
+    save_to_txt(elements, "data/maoxuan_intro_with_table2.txt")
 
 
 def test_image2():
@@ -48,8 +50,8 @@ def test_image2():
     pages = doc.pages
     elements = doc.elements
 
-    visualize_html(elements, "data/maoxuan_sample1.html")
-    save_to_txt(elements, "data/maoxuan_sample1.txt")
+    visualize_html(elements, "data/maoxuan_sample2.html")
+    save_to_txt(elements, "data/maoxuan_sample2.txt")
 
 
 def test_image3():
@@ -72,10 +74,24 @@ def test_image3():
     pages = doc.pages
     elements = doc.elements
 
-    visualize_html(elements, "data/bmp图片.html")
-    save_to_txt(elements, "data/bmp图片.txt")
+    visualize_html(elements, "data/bmp图片2.html")
+    save_to_txt(elements, "data/bmp图片2.txt")
+
+
+def test_regress():
+    files = [
+        ("data/bmp图片2.txt", "data/bmp图片.txt"),
+        ("data/maoxuan_sample2.txt", "data/maoxuan_sample2.txt"),
+        ("data/maoxuan_intro_with_table2.txt", "data/maoxuan_intro_with_table.txt"),
+    ]
+
+    for new_f, ori_f in files:
+        s1 = hashlib.md5(open(new_f, "rb").read()).hexdigest()
+        s2 = hashlib.md5(open(ori_f, "rb").read()).hexdigest()
+        assert s1 == s2
 
 
 test_image3()
 # test_image2()
 # test_image()
+# test_regress()

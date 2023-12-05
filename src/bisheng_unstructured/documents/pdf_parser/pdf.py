@@ -39,6 +39,7 @@ from bisheng_unstructured.documents.markdown import (
     transform_list_to_table,
 )
 from bisheng_unstructured.models import LayoutAgent, OCRAgent, TableAgent, TableDetAgent
+from bisheng_unstructured.utils import Timer
 
 from .blob import Blob
 
@@ -493,12 +494,6 @@ class PDFDocument(Document):
         semantic_polys = [e[0] for e in result_layout]
         semantic_labels = [e[1] for e in result_layout]
 
-        # print('---enhance-table---',
-        #       table_layout,
-        #       general_table_layout,
-        #       semantic_polys,
-        #       mask)
-
         return semantic_polys, semantic_labels
 
     def _allocate_semantic(self, page, layout, b64_image, is_scan=True, lang="zh"):
@@ -509,6 +504,7 @@ class PDFDocument(Document):
         TABLE_ID = 5
         IMAGE_ID = 2
 
+        timer = Timer()
         if not is_scan:
             textpage = page.get_textpage()
             # blocks = textpage.extractBLOCKS()
@@ -518,6 +514,7 @@ class PDFDocument(Document):
         else:
             blocks, words = self._extract_blocks_from_image(b64_image)
 
+        timer.toc()
         # print('---line blocks---')
         # for b in blocks:
         #     print(b)
@@ -538,10 +535,6 @@ class PDFDocument(Document):
                     aug_bbox = np.hstack([aug_bbox, padding])
                     bb = np.dot(aug_bbox, rotation_matrix).reshape(-1)
                     bb = norm_rect(bb)
-                    # info = BlockInfo(
-                    #     [bb[0], bb[1], bb[2], bb[3]], b.block_text, b.block_no, b.block_type
-                    # )
-                    # new_blocks.append(info)
                     b.bbox = [bb[0], bb[1], bb[2], bb[3]]
 
                     # process for words
@@ -565,6 +558,7 @@ class PDFDocument(Document):
                 # blocks = new_blocks
                 words = new_words
 
+        timer.toc()
         # if not self.with_columns:
         #     blocks = order_by_tbyx(blocks)
 
@@ -599,6 +593,8 @@ class PDFDocument(Document):
                 coords = ((bbs[0], bbs[1]), (bbs[2], bbs[3]), (bbs[4], bbs[5]), (bbs[6], bbs[7]))
                 semantic_polys.append(Polygon(coords))
                 semantic_labels.append(info["category_id"])
+
+        timer.toc()
 
         semantic_bboxes = []
         for poly in semantic_polys:
@@ -650,7 +646,6 @@ class PDFDocument(Document):
                 rs = text_rects[ind]
                 ord_ind = np.min(ori_orders)
                 mask[ind] = 1
-                # new_block_info.append((rect[0], rect[1], rect[2], rect[3], ts, rs, ind, ord_ind))
                 new_block_info.append(
                     BlockInfo(
                         [rect[0], rect[1], rect[2], rect[3]], "", -1, -1, ts, rs, ind, ord_ind
@@ -678,18 +673,16 @@ class PDFDocument(Document):
                         [rect[0], rect[1], rect[2], rect[3]], "", -1, -1, ts, rs, pos, ord_ind
                     )
                 )
-                # new_block_info.append((rect[0], rect[1], rect[2], rect[3], ts, rs, pos, ord_ind))
 
         for i in range(texts_cnt):
             if mask[i] == 0:
                 b = blocks[i]
-                r = np.asarray([b[0], b[1], b[2], b[3]])
+                r = np.asarray(b.bbox)
                 ord_ind = b.block_no
 
-                new_block_info.append(
-                    BlockInfo([b[0], b[1], b[2], b[3]], "", -1, -1, [texts[i]], [r], [i], ord_ind)
-                )
-                # new_block_info.append((b[0], b[1], b[2], b[3], [texts[i]], [r], [i], ord_ind))
+                new_block_info.append(BlockInfo(b.bbox, "", -1, -1, [texts[i]], [r], [i], ord_ind))
+
+        timer.toc()
 
         if self.with_columns:
             new_blocks = sorted(new_block_info, key=lambda x: x.ord_ind)
@@ -757,6 +750,8 @@ class PDFDocument(Document):
 
             # texts_labels.append(sem_label)
 
+        timer.toc()
+
         # Parse the table layout
         table_layout = []
         for table_info in table_infos:
@@ -772,15 +767,13 @@ class PDFDocument(Document):
                 "scene": "cell",
             }
             table_result = self.table_agent.predict(inp)
-
             # print('---table--', ocr_result, table_bbox, table_result)
-
             h_bbox = get_hori_rect(table_bbox)
 
             if not table_result["htmls"]:
                 # table layout parse failed, manually construce table
                 b = new_blocks[block_ind]
-                html = transform_list_to_table(b[4])
+                html = transform_list_to_table(b.ts)
                 table_layout.append((block_ind, html, h_bbox))
                 # print('---missing table---', block_ind, html)
             else:
@@ -795,19 +788,7 @@ class PDFDocument(Document):
             b.layout_type = TABLE_ID
             b.html_text = html
             b.block_text = text
-
-            # new_blocks[i] = (
-            #     h_bbox[0],
-            #     h_bbox[1],
-            #     h_bbox[2],
-            #     h_bbox[3],
-            #     text,
-            #     b[5],
-            #     b[6],
-            #     TABLE_ID,
-            #     html,
-            # )
-
+        timer.toc()
         # print(texts_labels)
         # filter the unused element
 
@@ -838,35 +819,12 @@ class PDFDocument(Document):
                 b.block_text = join_lines(b.ts, False, lang)
                 filtered_blocks.append(b)
 
-        # filtered_blocks = []
-        # for label, b in zip(texts_labels, new_blocks):
-        #     ori_i = b[6][0]
-        #     ori_b = blocks[ori_i]
-        #     block_type = ori_b[-1]
-        #     if block_type == IMG_BLOCK_TYPE:
-        #         continue
-
-        #     if np.all([len(t) == 0 for t in b[4]]):
-        #         continue
-
-        #     if label == TABLE_ID:
-        #         filtered_blocks.append(b)
-
-        #     elif label == IMAGE_ID:
-        #         if self.keep_text_in_image:
-        #             text = join_lines(b[4], False, lang)
-        #             filtered_blocks.append(BlockInfo(
-        #                 [b[0], b[1], b[2], b[3]],
-        #                 text, -1, -1, b[5], label, b[4]))
-
-        #     elif label in effective_class_inds:
-        #         text = join_lines(b[4], False, lang)
-        #         filtered_blocks.append((b[0], b[1], b[2], b[3], text, b[5], label, b[4]))
-
         # print('---filtered_blocks---')
         # for b in filtered_blocks:
         #     print(b)
 
+        timer.toc()
+        print("_allocate_semantic", timer.get())
         return filtered_blocks
 
     def _divide_blocks_into_groups(self, blocks):
@@ -978,41 +936,12 @@ class PDFDocument(Document):
                     new_text = join_lines([b0.block_text, b1.block_text], lang)
                     joined_lines = np.hstack([b0.ts, b1.ts])
                     joined_bboxes = np.vstack([b0.rs, b1.rs])
-                    new_block = BlockInfo(
-                        [b1[0], b1[1], b1[2], b1[3]],
-                        new_text,
-                        b1.block_no,
-                        b1.block_type,
-                        joined_lines,
-                        joined_bboxes,
-                        b1.ind,
-                        b1.ord_ind,
-                        b1.layout_type,
-                        b1.html_text,
-                    )
+                    new_block = b1
+                    new_block.block_text = new_text
+                    new_block.ts = joined_lines
+                    new_block.rs = joined_bboxes
                     groups[i][0] = new_block
                     groups[i - 1].pop(-1)
-
-                # if c0 > LINE_FULL_THRESHOLD and c1 < START_THRESHOLD and c2 < SIMI_HEIGHT_THRESHOLD:
-                #     new_text = join_lines([b0[4], b1[4]], lang)
-                #     # print('---join text', b0[-1], b1[-1])
-                #     # joined_lines = b0[-1] + b1[-1]
-                #     joined_lines = np.hstack([b0[-1], b1[-1]])
-                #     joined_bboxes = np.vstack([b0[5], b1[5]])
-                #     # joined_bboxes = b0[5] + b1[5]
-                #     new_block = (
-                #         b1[0],
-                #         b1[1],
-                #         b1[2],
-                #         b1[3],
-                #         new_text,
-                #         joined_bboxes,
-                #         b1[6],
-                #         joined_lines,
-                #     )
-                #     groups[i][0] = new_block
-                #     groups[i - 1].pop(-1)
-
             elif self.is_join_table and b0_label and b0_label == b1_label and b0_label == TABLE_ID:
                 row0 = b0.block_text.split("\n", 1)[0].split(" | ")
                 row1 = b1.block_text.split("\n", 1)[0].split(" | ")
@@ -1025,37 +954,11 @@ class PDFDocument(Document):
                     has_header = np.all([e0 == e1 for e0, e1 in zip(row0, row1)])
                     new_text = merge_md_tables([b0.block_text, b1.block_text], has_header)
                     new_html_text = merge_html_tables([b0.html_text, b1.html_text], has_header)
-                    new_block = BlockInfo(
-                        [b1[0], b1[1], b1[2], b1[3]],
-                        new_text,
-                        b1.block_no,
-                        b1.block_type,
-                        b1.ts,
-                        b1.rs,
-                        b1.ind,
-                        b1.ord_ind,
-                        b1.layout_type,
-                        new_html_text,
-                    )
-
+                    new_block = b1
+                    new_block.block_text = new_text
+                    new_block.html_text = new_html_text
                     groups[i][0] = new_block
                     groups[i - 1].pop(-1)
-
-            # elif self.is_join_table and b0_label and b0_label == b1_label and b0_label == TABLE_ID:
-            #     row0 = b0[4].split("\n", 1)[0].split(" | ")
-            #     row1 = b1[4].split("\n", 1)[0].split(" | ")
-
-            #     c0 = (r1_w - r0_w) / r0_w
-            #     c1 = len(row0) == len(row1)
-            #     # print('---table join---', c0, c1, row0, row1, r1_w, r0_w)
-
-            #     if c0 < SIMI_WIDTH_THRESHOLD and c1:
-            #         has_header = np.all([e0 == e1 for e0, e1 in zip(row0, row1)])
-            #         new_text = merge_md_tables([b0[4], b1[4]], has_header)
-            #         new_html_text = merge_html_tables([b0[-1], b1[-1]], has_header)
-            #         new_block = (b1[0], b1[1], b1[2], b1[3], new_text, b1[5], b1[6], new_html_text)
-            #         groups[i][0] = new_block
-            #         groups[i - 1].pop(-1)
 
             b0, b0_label, r0, r0_w, r0_h = _get_elem(groups[i], False)
 
@@ -1069,13 +972,18 @@ class PDFDocument(Document):
         for idx, blocks in zip(page_inds, groups):
             page = Page(number=idx)
             for b in blocks:
-                bbox = [b[0], b[1], b[2], b[3]]
-                label, text = b[6], b[4]
+                # bbox = [b[0], b[1], b[2], b[3]]
+                # label, text = b[6], b[4]
+                bbox = b.bbox
+                label = b.layout_type
+                text = b.block_text
+
                 element = None
                 extra_data = {"bboxes": [bbox]}
 
                 if label == TABLE_ID:
-                    html = b[-1]
+                    # html = b[-1]
+                    html = b.html_text
                     clean_html = clean_html_table(html)
                     extra_data.update({"types": ["table"], "pages": [idx]})
                     prev_ind = 0
@@ -1087,8 +995,9 @@ class PDFDocument(Document):
                     element = Table(text=text, metadata=metadata)
                 else:
                     prev_ind = 0
-                    line_bboxes = [b.tolist() for b in b[5]]
-                    lines = b[-1]
+                    line_bboxes = [b.tolist() for b in b.rs]
+                    # lines = b[-1]
+                    lines = b.ts
                     line_cnt = len(lines)
                     extra_data.update({"bboxes": line_bboxes})
                     if True or lang == "zh":  # for join test only
@@ -1180,6 +1089,7 @@ class PDFDocument(Document):
         groups = self._allocate_continuous(groups, lang)
         pages = self._save_to_pages(groups, page_inds, lang)
         return pages
+        # return []
 
     @property
     def pages(self) -> List[Page]:
