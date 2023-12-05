@@ -1,5 +1,7 @@
 import os
 import shutil
+import signal
+import subprocess
 import tempfile
 from html import parser
 
@@ -110,11 +112,13 @@ class Text2PDF(object):
     @staticmethod
     def run(cmd):
         try:
-            exit_code = os.system(cmd)
-            if exit_code != 0:
-                raise Exception("error in transforming text to pdf")
+            p = subprocess.Popen(cmd, shell=True, preexec_fn=os.setsid)
+            p.wait(timeout=10)
+        except subprocess.TimeoutExpired:
+            os.killpg(os.getpgid(p.pid), signal.SIGTERM)
+            raise Exception("timeout in transforming text to pdf")
         except Exception as e:
-            raise e
+            raise Exception(f"err in text2pdf: [{e}]")
 
     def render(self, input_file, output_file=None, to_bytes=False):
         type_ext = input_file.rsplit(".", 1)[-1]
