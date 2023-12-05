@@ -1,5 +1,7 @@
 import os
+import shlex
 import shutil
+import subprocess
 
 from bisheng_unstructured.partition.common import convert_office_doc
 
@@ -73,14 +75,19 @@ class DocxToPDFV1(object):
 
         cmd = self.cmd_template.format(input_file, temp_dir)
         try:
-            exit_code = os.system(cmd)
+            # exit_code = os.system(cmd)
+            # ret = subprocess.run(shlex.split(cmd), shell=True, timeout=10)
+            out = subprocess.check_output(cmd, shell=True, timeout=10)
+            print(out)
+            # exit_code = ret.returncode
+            exit_code = 0
             if exit_code != 0:
                 raise Exception("error in transforming doc to pdf")
         except Exception as e:
             raise e
 
-        if output_file is not None:
-            shutil.move(temp_output_file, output_file)
+        # if output_file is not None:
+        #     shutil.move(temp_output_file, output_file)
 
-        if to_bytes:
-            return open(temp_output_file, "rb").read()
+        # if to_bytes:
+        #     return open(temp_output_file, "rb").read()

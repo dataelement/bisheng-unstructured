@@ -1,5 +1,6 @@
 """Loads PDF with semantic partition."""
 import base64
+import concurrent
 import io
 import json
 import logging
@@ -9,19 +10,21 @@ import tempfile
 import time
 from abc import ABC
 from collections import Counter
+from concurrent.futures import ThreadPoolExecutor
 from copy import deepcopy
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Iterator, List, Mapping, Optional, Union
 from urllib.parse import urlparse
 
-import fitz
+import fitz as pymupdf
 import numpy as np
 import pypdfium2
 import requests
 from shapely import Polygon
 from shapely import box as Rect
 
+from bisheng_unstructured.common import Timer
 from bisheng_unstructured.documents.base import Document, Page
 from bisheng_unstructured.documents.elements import (
     ElementMetadata,
@@ -39,7 +42,6 @@ from bisheng_unstructured.documents.markdown import (
     transform_list_to_table,
 )
 from bisheng_unstructured.models import LayoutAgent, OCRAgent, TableAgent, TableDetAgent
-from bisheng_unstructured.utils import Timer
 
 from .blob import Blob
 
@@ -257,6 +259,7 @@ class PDFDocument(Document):
         verbose: bool = False,
         enhance_table: bool = True,
         keep_text_in_image: bool = True,
+        n_parallel: int = 10,
         **kwargs,
     ) -> None:
         """Initialize with a file path."""
@@ -275,6 +278,7 @@ class PDFDocument(Document):
         self.file = file
         self.enhance_table = enhance_table
         self.keep_text_in_image = keep_text_in_image
+        self.n_parallel = n_parallel
         super().__init__()
 
     def _get_image_blobs(self, fitz_doc, pdf_reader, n=None, start=0):
@@ -286,7 +290,7 @@ class PDFDocument(Document):
             bytes_img = None
             page = fitz_doc.load_page(pg)
             pages.append(page)
-            mat = fitz.Matrix(1, 1)
+            mat = pymupdf.Matrix(1, 1)
             try:
                 pm = page.get_pixmap(matrix=mat, alpha=False)
                 bytes_img = pm.getPNGData()
@@ -496,7 +500,7 @@ class PDFDocument(Document):
 
         return semantic_polys, semantic_labels
 
-    def _allocate_semantic(self, page, layout, b64_image, is_scan=True, lang="zh"):
+    def _allocate_semantic(self, textpage_info, layout, b64_image, is_scan=True, lang="zh"):
         class_name = ["印章", "图片", "标题", "段落", "表格", "页眉", "页码", "页脚"]
         effective_class_inds = [3, 4, 5, 999]
         non_conti_class_ids = [6, 7, 8]
@@ -506,11 +510,12 @@ class PDFDocument(Document):
 
         timer = Timer()
         if not is_scan:
-            textpage = page.get_textpage()
+            # textpage = page.get_textpage()
             # blocks = textpage.extractBLOCKS()
             # blocks, words = self._extract_blocks(textpage)
             # blocks, words = self._extract_lines(textpage)
-            blocks, words = self._extract_lines_v2(textpage)
+            # blocks, words = self._extract_lines_v2(textpage)
+            blocks, words = textpage_info
         else:
             blocks, words = self._extract_blocks_from_image(b64_image)
 
@@ -824,7 +829,7 @@ class PDFDocument(Document):
         #     print(b)
 
         timer.toc()
-        print("_allocate_semantic", timer.get())
+        # print('_allocate_semantic', timer.get())
         return filtered_blocks
 
     def _divide_blocks_into_groups(self, blocks):
@@ -1036,8 +1041,16 @@ class PDFDocument(Document):
         groups = []
         page_inds = []
         lang = None
+
+        def _task(textpage_info, bytes_img, is_scan, lang):
+            b64_data = base64.b64encode(bytes_img).decode()
+            layout_inp = {"b64_image": b64_data}
+            layout = self.layout_agent.predict(layout_inp)
+            blocks = self._allocate_semantic(textpage_info, layout, b64_data, is_scan, lang)
+            return blocks
+
         with blob.as_bytes_io() as file_path:
-            fitz_doc = fitz.open(file_path)
+            fitz_doc = pymupdf.open(file_path)
             pdf_doc = pypdfium2.PdfDocument(file_path, autoclose=True)
             max_page = fitz_doc.page_count - start
             n = self.n if self.n else max_page
@@ -1059,37 +1072,47 @@ class PDFDocument(Document):
             if self.verbose:
                 print(f"{n} pages need be processed...")
 
-            for idx in range(start, start + n):
-                blobs, pages = self._get_image_blobs(fitz_doc, pdf_doc, 1, idx)
+            results = []
+            with ThreadPoolExecutor(max_workers=self.n_parallel) as executor:
+                futures = []
+                for idx in range(start, start + n):
+                    # timer = Timer()
+                    textpage = fitz_doc.load_page(idx).get_textpage()
+                    page = pdf_doc.get_page(idx)
+                    pil_image = page.render().to_pil()
+                    img_byte_arr = io.BytesIO()
+                    pil_image.save(img_byte_arr, format="PNG")
+                    bytes_img = img_byte_arr.getvalue()
+                    # timer.toc()
+                    # print('pil image png convert', timer.get())
 
-                b64_data = base64.b64encode(blobs[0].as_bytes()).decode()
-                layout_inp = {"b64_image": b64_data}
-                layout = self.layout_agent.predict(layout_inp)
+                    if not is_scan:
+                        textpage_info = self._extract_lines_v2(textpage)
+                    else:
+                        textpage_info = (None, None)
 
-                blocks = self._allocate_semantic(pages[0], layout, b64_data, is_scan, lang)
-                if not blocks:
-                    continue
+                    futures.append(executor.submit(_task, textpage_info, bytes_img, is_scan, lang))
 
-                if self.with_columns:
-                    sub_groups = self._divide_blocks_into_groups(blocks)
-                    groups.extend(sub_groups)
-                    for _ in sub_groups:
+                idx = start
+                for future in futures:
+                    blocks = future.result()
+                    if not blocks:
+                        continue
+
+                    if self.with_columns:
+                        sub_groups = self._divide_blocks_into_groups(blocks)
+                        groups.extend(sub_groups)
+                        for _ in sub_groups:
+                            page_inds.append(idx + 1)
+                    else:
+                        groups.append(blocks)
                         page_inds.append(idx + 1)
-                else:
-                    groups.append(blocks)
-                    page_inds.append(idx + 1)
 
-                if self.verbose:
-                    count = idx - start + 1
-                    if count % 50 == 0:
-                        elapse = round(time.time() - tic, 2)
-                        tic = time.time()
-                        print(f"process {count} pages used {elapse}sec...")
+                    idx += 1
 
         groups = self._allocate_continuous(groups, lang)
         pages = self._save_to_pages(groups, page_inds, lang)
         return pages
-        # return []
 
     @property
     def pages(self) -> List[Page]:

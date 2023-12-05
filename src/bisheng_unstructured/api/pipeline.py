@@ -80,6 +80,7 @@ class Pipeline(object):
 
         if inp.file_type not in PARTITION_MAP:
             raise Exception(f"file type[{inp.file_type}] not supported")
+
         filename = inp.file_path
         file_type = inp.file_type
 
@@ -90,8 +91,6 @@ class Pipeline(object):
             part_inp.update({"model_params": self.pdf_model_params})
         try:
             elements = part_func(**part_inp)
-            # for e in elements:
-            #     print("e", e.to_dict())
             mode = inp.mode
             if mode == "partition":
                 isd = convert_to_isd(elements)

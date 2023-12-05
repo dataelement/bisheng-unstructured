@@ -7,7 +7,7 @@ from bisheng_unstructured.models import LayoutAgent, OCRAgent, TableAgent, Table
 from .blob import Blob
 from .pdf import PDFDocument
 
-# from bisheng_unstructured.utils import Timer
+# from bisheng_unstructured.common import Timer
 
 
 class ImageDocument(PDFDocument):
@@ -21,6 +21,7 @@ class ImageDocument(PDFDocument):
         keep_text_in_image: bool = True,
         lang: str = "zh",
         verbose: bool = False,
+        n_parallel: int = 10,
         **kwargs
     ) -> None:
         self.layout_agent = LayoutAgent(**model_params)
@@ -39,6 +40,7 @@ class ImageDocument(PDFDocument):
         self.support_rotate = False
         self.is_join_table = False
         self.keep_text_in_image = keep_text_in_image
+        self.n_parallel = n_parallel
 
         super(PDFDocument, self).__init__()
 

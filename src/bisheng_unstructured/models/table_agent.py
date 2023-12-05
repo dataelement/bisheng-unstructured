@@ -21,7 +21,7 @@ class TableAgent(object):
         }
 
         self.client = requests.Session()
-        self.timeout = kwargs.get("timeout", 10000)
+        self.timeout = kwargs.get("timeout", 10)
 
     def predict(self, inp):
         scene = inp.pop("scene", "rowcol")
@@ -52,4 +52,4 @@ class TableDetAgent(object):
             r = self.client.post(url=self.ep, json=params, timeout=self.timeout)
             return r.json()
         except Exception as e:
-            return {"status_code": 400, "status_message": str(e)}
+            raise e

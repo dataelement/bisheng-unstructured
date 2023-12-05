@@ -94,4 +94,4 @@ def test_regress():
 test_image3()
 # test_image2()
 # test_image()
-# test_regress()
+test_regress()

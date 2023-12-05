@@ -95,14 +95,17 @@ async def etl4_llm(inp: UnstructuredInput):
     with tempfile.TemporaryDirectory() as tmpdir:
         file_path = os.path.join(tmpdir, filename)
         if b64_data:
-            with open(file_path, "wb") as fout:
-                fout.write(base64.b64decode(b64_data[0]))
+            try:
+                with open(file_path, "wb") as fout:
+                    fout.write(base64.b64decode(b64_data[0]))
+            except Exception:
+                return Exception(f"b64_data is damaged")
         else:
             headers = inp.parameters.get("headers", {})
             ssl_verify = inp.parameters.get("ssl_verify", True)
             response = requests.get(inp.url, headers=headers, verify=ssl_verify)
             if not response.ok:
-                raise Exception(f"URL return an error: {response.status_code}")
+                raise Exception(f"url data is damaged: {response.status_code}")
             with open(file_path, "wb") as fout:
                 fout.write(response.text)
 
