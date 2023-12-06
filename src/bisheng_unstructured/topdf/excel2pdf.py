@@ -1,5 +1,7 @@
 import os
 import shutil
+import signal
+import subprocess
 import tempfile
 
 import openpyxl
@@ -28,11 +30,22 @@ class ExcelToPDF(object):
     @staticmethod
     def run(cmd):
         try:
-            exit_code = os.system(cmd)
-            if exit_code != 0:
-                raise Exception("error in transforming xlsx to pdf")
+            p = subprocess.Popen(cmd, shell=True, preexec_fn=os.setsid)
+            p.wait(timeout=10)
+        except subprocess.TimeoutExpired:
+            os.killpg(os.getpgid(p.pid), signal.SIGTERM)
+            raise Exception("timeout in transforming xlsx to pdf")
         except Exception as e:
-            raise e
+            raise Exception(f"err in excel2pdf: [{e}]")
+
+    @staticmethod
+    def run(cmd):
+        try:
+            p = subprocess.Popen(cmd, shell=True, preexec_fn=os.setsid)
+            p.wait(timeout=10)
+        except subprocess.TimeoutExpired:
+            os.killpg(os.getpgid(p.pid), signal.SIGTERM)
+            raise Exception("error in transforming xlsx to pdf")
 
     def render(self, input_file, output_file=None, to_bytes=False):
         type_ext = input_file.rsplit(".", 1)[-1]

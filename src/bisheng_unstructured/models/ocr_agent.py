@@ -9,7 +9,7 @@ class OCRAgent(object):
     def __init__(self, **kwargs):
         self.ep = kwargs.get("ocr_model_ep")
         self.client = requests.Session()
-        self.timeout = kwargs.get("timeout", 10000)
+        self.timeout = kwargs.get("timeout", 10)
         self.params = {
             "sort_filter_boxes": True,
             "enable_huarong_box_adjust": True,
@@ -41,4 +41,4 @@ class OCRAgent(object):
             r = self.client.post(url=self.ep, json=req_data, timeout=self.timeout)
             return r.json()
         except Exception as e:
-            return {"status_code": 400, "status_message": str(e)}
+            raise e

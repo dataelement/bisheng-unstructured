@@ -8,8 +8,13 @@ from fastapi import Depends, FastAPI, Header, HTTPException, Request, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import ORJSONResponse
 
+from bisheng_unstructured.common import Timer, get_logger
+
 from .pipeline import Pipeline
 from .types import ConfigInput, UnstructuredInput, UnstructuredOutput
+
+logger = get_logger("BishengUns", "/app/log/bisheng-uns.log")
+
 
 # Fastapi App
 
@@ -90,23 +95,36 @@ async def etl4_llm(inp: UnstructuredInput):
     file_type = filename.rsplit(".", 1)[1].lower()
 
     if not inp.b64_data and not inp.url:
+        logger.error(f"url or b64_data at least one must be given filename=[{inp.filename}]")
         raise Exception("url or b64_data at least one must be given")
+
+    logger.info(f"start etl4llm with mode=[{inp.mode}] filename=[{inp.filename}]")
+    timer = Timer()
 
     with tempfile.TemporaryDirectory() as tmpdir:
         file_path = os.path.join(tmpdir, filename)
         if b64_data:
-            with open(file_path, "wb") as fout:
-                fout.write(base64.b64decode(b64_data[0]))
+            try:
+                with open(file_path, "wb") as fout:
+                    fout.write(base64.b64decode(b64_data[0]))
+            except Exception:
+                logger.error(f"b64_data is damaged filename=[{inp.filename}]")
+                return Exception(f"b64_data is damaged")
         else:
             headers = inp.parameters.get("headers", {})
             ssl_verify = inp.parameters.get("ssl_verify", True)
             response = requests.get(inp.url, headers=headers, verify=ssl_verify)
             if not response.ok:
-                raise Exception(f"URL return an error: {response.status_code}")
+                raise Exception(f"url data is damaged: {response.status_code}")
+
             with open(file_path, "wb") as fout:
                 fout.write(response.text)
 
         inp.file_path = file_path
         inp.file_type = file_type
 
-        return pipeline.predict(inp)
+        timer.toc()
+        outp = pipeline.predict(inp)
+        timer.toc()
+        logger.info(f"succ etl4llm with filename=[{inp.filename}] elapses=[{timer.get()}]]")
+        return outp

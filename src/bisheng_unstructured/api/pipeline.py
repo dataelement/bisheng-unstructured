@@ -1,6 +1,7 @@
 import json
 from typing import Dict
 
+from bisheng_unstructured.common import get_logger
 from bisheng_unstructured.documents.html_utils import save_to_txt, visualize_html
 from bisheng_unstructured.documents.pdf_parser.image import ImageDocument
 from bisheng_unstructured.documents.pdf_parser.pdf import PDFDocument
@@ -18,6 +19,8 @@ from bisheng_unstructured.staging.base import convert_to_isd
 
 from .any2pdf import Any2PdfCreator
 from .types import UnstructuredInput, UnstructuredOutput
+
+logger = get_logger("BishengUns", "/app/log/bisheng-uns.log")
 
 
 def partition_pdf(filename, model_params, **kwargs):
@@ -72,6 +75,7 @@ class Pipeline(object):
             result = UnstructuredOutput(b64_pdf=output)
             return result
         except Exception as e:
+            logger.error(f"error in topdf filename=[{inp.filename}] err=[{e}]")
             return UnstructuredOutput(status_code=400, status_message=str(e))
 
     def predict(self, inp: UnstructuredInput) -> UnstructuredOutput:
@@ -80,6 +84,7 @@ class Pipeline(object):
 
         if inp.file_type not in PARTITION_MAP:
             raise Exception(f"file type[{inp.file_type}] not supported")
+
         filename = inp.file_path
         file_type = inp.file_type
 
@@ -90,8 +95,6 @@ class Pipeline(object):
             part_inp.update({"model_params": self.pdf_model_params})
         try:
             elements = part_func(**part_inp)
-            # for e in elements:
-            #     print("e", e.to_dict())
             mode = inp.mode
             if mode == "partition":
                 isd = convert_to_isd(elements)
@@ -105,4 +108,5 @@ class Pipeline(object):
 
             return result
         except Exception as e:
+            logger.error(f"error in partition filename=[{inp.filename}] err=[{e}]")
             return UnstructuredOutput(status_code=400, status_message=str(e))
