@@ -209,7 +209,7 @@ def test_pdf_doc9():
     }
     # print("model_params", model_params)
 
-    for _ in range(100):
+    for _ in range(1):
         filename = "examples/docs/流动资金借款合同1.pdf"
         pdf_doc = PDFDocument(
             file=filename, model_params=model_params, start=0, n=10, verbose=True, n_parallel=5
@@ -242,7 +242,7 @@ def test_regress():
 # test_pdf_doc5()
 # test_pdf_doc6()
 
-# test_pdf_doc7()
-# test_pdf_doc8()
+test_pdf_doc7()
+test_pdf_doc8()
 test_pdf_doc9()
-# test_regress()
+test_regress()
