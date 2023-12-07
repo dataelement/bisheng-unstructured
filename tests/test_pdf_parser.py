@@ -235,6 +235,32 @@ def test_regress():
         assert s1 == s2
 
 
+def test_pdf_doc10():
+    url = TEST_RT_URL
+    layout_ep = url + "elem_layout_v1/infer"
+    cell_model_ep = url + "elem_table_cell_detect_v1/infer"
+    rowcol_model_ep = url + "elem_table_rowcol_detect_v1/infer"
+    table_model_ep = url + "elem_table_detect_v1/infer"
+
+    model_params = {
+        "layout_ep": layout_ep,
+        "cell_model_ep": cell_model_ep,
+        "rowcol_model_ep": rowcol_model_ep,
+        "table_model_ep": table_model_ep,
+        "ocr_model_ep": f"{TEST_RT_URL}elem_ocr_collection_v3/infer",
+    }
+    print("model_params", model_params)
+
+    filename = "examples/docs/南陵电子2022.pdf"
+    pdf_doc = PDFDocument(
+        file=filename, model_params=model_params, start=0, verbose=True, n_parallel=10
+    )
+    pages = pdf_doc.pages
+    elements = pdf_doc.elements
+    visualize_html(elements, "data/南陵电子2022-2.html")
+    save_to_txt(elements, "data/南陵电子2022-2.txt")
+
+
 # test_pdf_doc()
 # test_pdf_doc2()
 # test_pdf_doc3()
@@ -242,7 +268,9 @@ def test_regress():
 # test_pdf_doc5()
 # test_pdf_doc6()
 
-test_pdf_doc7()
-test_pdf_doc8()
-test_pdf_doc9()
-test_regress()
+# test_pdf_doc7()
+# test_pdf_doc8()
+# test_pdf_doc9()
+# test_regress()
+
+test_pdf_doc10()

@@ -9,7 +9,7 @@ class LayoutAgent(object):
     def __init__(self, *args, **kwargs):
         self.ep = kwargs.get("layout_ep")
         self.client = requests.Session()
-        self.timeout = kwargs.get("timeout", 10)
+        self.timeout = kwargs.get("timeout", 60)
         self.params = {
             "longer_edge_size": 0,
         }
@@ -21,5 +21,7 @@ class LayoutAgent(object):
         try:
             r = self.client.post(url=self.ep, json=params, timeout=self.timeout)
             return r.json()
+        except requests.exceptions.Timeout:
+            raise Exception(f"timeout in layout predict")
         except Exception as e:
-            raise e
+            raise Exception(f"exception in layout predict: [{e}]")

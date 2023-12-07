@@ -9,7 +9,7 @@ class OCRAgent(object):
     def __init__(self, **kwargs):
         self.ep = kwargs.get("ocr_model_ep")
         self.client = requests.Session()
-        self.timeout = kwargs.get("timeout", 10)
+        self.timeout = kwargs.get("timeout", 60)
         self.params = {
             "sort_filter_boxes": True,
             "enable_huarong_box_adjust": True,
@@ -40,5 +40,7 @@ class OCRAgent(object):
         try:
             r = self.client.post(url=self.ep, json=req_data, timeout=self.timeout)
             return r.json()
+        except requests.exceptions.Timeout:
+            raise Exception(f"timeout in ocr predict")
         except Exception as e:
-            raise e
+            raise Exception(f"exception in ocr predict: [{e}]")

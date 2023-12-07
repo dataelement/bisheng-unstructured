@@ -21,7 +21,7 @@ class TableAgent(object):
         }
 
         self.client = requests.Session()
-        self.timeout = kwargs.get("timeout", 10)
+        self.timeout = kwargs.get("timeout", 60)
 
     def predict(self, inp):
         scene = inp.pop("scene", "rowcol")
@@ -32,8 +32,10 @@ class TableAgent(object):
         try:
             r = self.client.post(url=ep, json=params, timeout=self.timeout)
             return r.json()
+        except requests.exceptions.Timeout:
+            raise Exception(f"timeout in table structure predict")
         except Exception as e:
-            return {"status_code": 400, "status_message": str(e)}
+            raise Exception(f"exception in table structure predict: [{e}]")
 
 
 # TableDet Agent Version 0.1, update at 2023.08.31
@@ -41,7 +43,7 @@ class TableDetAgent(object):
     def __init__(self, **kwargs):
         self.ep = kwargs.get("table_model_ep")
         self.client = requests.Session()
-        self.timeout = kwargs.get("timeout", 10000)
+        self.timeout = kwargs.get("timeout", 60)
         self.params = {}
 
     def predict(self, inp):
@@ -51,5 +53,7 @@ class TableDetAgent(object):
         try:
             r = self.client.post(url=self.ep, json=params, timeout=self.timeout)
             return r.json()
+        except requests.exceptions.Timeout:
+            raise Exception(f"timeout in table det predict")
         except Exception as e:
-            raise e
+            raise Exception(f"exception in table det predict: [{e}]")
