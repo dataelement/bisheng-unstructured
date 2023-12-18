@@ -254,7 +254,17 @@ def _paragraph_to_element(
         return None
 
     if "Heading" in paragraph.style.name:
-        return Title(text)
+        element = Title(text)
+        try:
+            element.metadata.extra_data = {"title_level": int(paragraph.style.name[-1])}
+            # logger.info(f"{paragraph.style.name}")
+        except Exception as e:
+            logger.warning(f"{paragraph.style.name}", e)
+            pattern = r"Heading (\d+)"
+            match = re.search(pattern, paragraph.style.name)
+            element.metadata.extra_data = {"title_level": int(match.group(1))}
+
+        return element
 
     element_class = STYLE_TO_ELEMENT_MAPPING.get(style_name)
 

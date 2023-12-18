@@ -51,6 +51,9 @@ def test_part2():
 
     elements = partition_docx(filename=filename)
 
+    # for e in elements:
+    #     print("-------------------e", e.to_dict()['metadata'])
+
     output_file = "./data/需求-预警共享平台信息接入统一门户消息中心需求分析V1.0.html"
     output_file2 = "./data/需求-预警共享平台信息接入统一门户消息中心需求分析V1.0.txt"
     visualize_html(elements, output_file)
@@ -69,7 +72,7 @@ def test_part3():
     save_to_txt(elements, output_file2)
 
 
-# test_part2()
+test_part2()
 # test_part3()
 
 # test_docx()
