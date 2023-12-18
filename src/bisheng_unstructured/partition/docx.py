@@ -6,6 +6,7 @@ from typing import IO, BinaryIO, List, Optional, Tuple, Union, cast
 import docx
 from docx.oxml.shared import qn
 from docx.table import Table as DocxTable
+from docx.table import _Cell, _Row
 from docx.text.paragraph import Paragraph
 from docx.text.run import Run
 from lxml import etree
@@ -253,7 +254,17 @@ def _paragraph_to_element(
         return None
 
     if "Heading" in paragraph.style.name:
-        return Title(text)
+        element = Title(text)
+        try:
+            element.metadata.extra_data = {"title_level": int(paragraph.style.name[-1])}
+            # logger.info(f"{paragraph.style.name}")
+        except Exception as e:
+            logger.warning(f"{paragraph.style.name}", e)
+            pattern = r"Heading (\d+)"
+            match = re.search(pattern, paragraph.style.name)
+            element.metadata.extra_data = {"title_level": int(match.group(1))}
+
+        return element
 
     element_class = STYLE_TO_ELEMENT_MAPPING.get(style_name)
 
@@ -418,7 +429,8 @@ def _get_emphasized_texts_from_paragraph(paragraph: Paragraph) -> List[dict]:
 def _get_emphasized_texts_from_table(table: DocxTable) -> List[dict]:
     emphasized_texts = []
     for row in table.rows:
-        for cell in row.cells:
+        row_cells = [_Cell(tc, table) for tc in row._tr.tc_lst]
+        for cell in row_cells:
             for paragraph in cell.paragraphs:
                 _emphasized_texts = _get_emphasized_texts_from_paragraph(paragraph)
                 emphasized_texts += _emphasized_texts

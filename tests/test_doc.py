@@ -46,7 +46,36 @@ def test5():
     outp = "./data/maoxuan_sample.pdf"
 
 
-test_docx()
+def test_part2():
+    filename = "./examples/docs/" "XXXX-需求-预警共享平台信息接入统一门户消息中心需求分析V1.0.docx"
+
+    elements = partition_docx(filename=filename)
+
+    # for e in elements:
+    #     print("-------------------e", e.to_dict()['metadata'])
+
+    output_file = "./data/需求-预警共享平台信息接入统一门户消息中心需求分析V1.0.html"
+    output_file2 = "./data/需求-预警共享平台信息接入统一门户消息中心需求分析V1.0.txt"
+    visualize_html(elements, output_file)
+    save_to_txt(elements, output_file2)
+
+
+def test_part3():
+    fn = "XXXX-需求-贷后定期检视业务需求(含处置调查报告需求)-V0.52-20211129"
+    filename = "./examples/docs/" + fn + ".docx"
+
+    elements = partition_docx(filename=filename)
+
+    output_file = "./data/" + fn + ".html"
+    output_file2 = "./data/" + fn + ".txt"
+    visualize_html(elements, output_file)
+    save_to_txt(elements, output_file2)
+
+
+test_part2()
+# test_part3()
+
+# test_docx()
 # test_docx2()
 # test_docx3()
 # test4()
