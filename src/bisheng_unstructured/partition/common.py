@@ -8,6 +8,7 @@ from tempfile import SpooledTemporaryFile
 from typing import IO, TYPE_CHECKING, Any, BinaryIO, Dict, List, Optional, Tuple, Union
 
 import emoji
+from docx.table import _Cell, _Row
 from tabulate import tabulate
 
 from bisheng_unstructured.documents.coordinates import CoordinateSystem
@@ -345,8 +346,16 @@ def convert_ms_office_table_to_text(table: "docxtable.Table", as_html: bool = Tr
     fmt = "html" if as_html else "plain"
     rows = list(table.rows)
     if len(rows) > 0:
-        headers = [cell.text for cell in rows[0].cells]
-        data = [[cell.text for cell in row.cells] for row in rows[1:]]
+        row0_cells = [_Cell(tc, table) for tc in rows[0]._tr.tc_lst]
+        headers = [cell.text for cell in row0_cells]
+        # headers = [cell.text for cell in rows[0].cells]
+
+        data = []
+        for row in rows[1:]:
+            row_cells = [_Cell(tc, table) for tc in row._tr.tc_lst]
+            data.append([cell.text for cell in row_cells])
+
+        # data = [[cell.text for cell in row.cells] for row in rows[1:]]
         table_text = tabulate(data, headers=headers, tablefmt=fmt)
     else:
         table_text = ""
