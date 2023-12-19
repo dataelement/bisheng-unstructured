@@ -70,6 +70,8 @@ async def update_config(inp: ConfigInput):
     }
 
     if inp.rt_ep is not None:
+        # update environment
+        os.environ['rt_server'] = inp.rt_ep
         pdf_model_params = {}
         for k, v in pdf_model_params_temp.items():
             pdf_model_params[k] = v.format(inp.rt_ep)
@@ -78,6 +80,7 @@ async def update_config(inp: ConfigInput):
     else:
         config_dict = inp.dict()
 
+    # update persist data
     with open(config_file, 'wb') as file:
         file.write(json.loads(config_dict))
 

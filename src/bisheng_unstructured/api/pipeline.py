@@ -61,26 +61,24 @@ class Pipeline(object):
     def __init__(self, config_file: str):
         ''' k8s 使用cm 创建环境变量'''
         tmp_dict = json.load(open(config_file))
-        pdf_model_params = {
-            "layout_ep": os.getenv("layout_ep", tmp_dict.get("layout_ep")),
-            "cell_model_ep": os.getenv("cell_model_ep", tmp_dict.get("cell_model_ep")),
-            "rowcol_model_ep": os.getenv("rowcol_model_ep", tmp_dict.get("rowcol_model_ep")),
-            "table_model_ep": os.getenv("table_model_ep", tmp_dict.get("table_model_ep")),
-            "ocr_model_ep": os.getenv("ocr_model_ep", tmp_dict.get("ocr_model_ep"))
-        }
-
-        self.config = {"pdf_model_params": pdf_model_params}
+        rt_ep = os.getenv("rt_server")
+        if rt_ep:
+            pdf_model_params_temp = {
+                "layout_ep": f"http://{rt_ep}/v2.1/models/elem_layout_v1/infer",
+                "cell_model_ep": f"http://{rt_ep}/v2.1/models/elem_table_cell_detect_v1/infer",
+                "rowcol_model_ep": f"http://{rt_ep}/v2.1/models/elem_table_rowcol_detect_v1/infer",
+                "table_model_ep": f"http://{rt_ep}/v2.1/models/elem_table_detect_v1/infer",
+                "ocr_model_ep": f"http://{rt_ep}/v2.1/models/elem_ocr_collection_v3/infer",
+            }
+            self.config = {"pdf_model_params": pdf_model_params_temp}
+        else:
+            self.config = tmp_dict
         self.pdf_model_params = self.config.get("pdf_model_params")
         topdf_model_params = self.config.get("topdf_model_params", {})
         self.pdf_creator = Any2PdfCreator(topdf_model_params)
 
     def update_config(self, config_dict):
         self.config = config_dict
-        os.environ['layout_ep'] = self.config.get("pdf_model_params").get("layout_ep")
-        os.environ['cell_model_ep'] = self.config.get("pdf_model_params").get("cell_model_ep")
-        os.environ['rowcol_model_ep'] = self.config.get("pdf_model_params").get("rowcol_model_ep")
-        os.environ['table_model_ep'] = self.config.get("pdf_model_params").get("table_model_ep")
-        os.environ['ocr_model_ep'] = self.config.get("pdf_model_params").get("ocr_model_ep")
         self.pdf_model_params = self.config.get("pdf_model_params")
         topdf_model_params = self.config.get("topdf_model_params", {})
         self.pdf_creator = Any2PdfCreator(topdf_model_params)
