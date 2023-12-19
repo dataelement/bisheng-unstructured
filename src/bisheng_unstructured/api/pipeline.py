@@ -76,6 +76,11 @@ class Pipeline(object):
 
     def update_config(self, config_dict):
         self.config = config_dict
+        os.environ['layout_ep'] = self.config.get("pdf_model_params").get("layout_ep")
+        os.environ['cell_model_ep'] = self.config.get("pdf_model_params").get("cell_model_ep")
+        os.environ['rowcol_model_ep'] = self.config.get("pdf_model_params").get("rowcol_model_ep")
+        os.environ['table_model_ep'] = self.config.get("pdf_model_params").get("table_model_ep")
+        os.environ['ocr_model_ep'] = self.config.get("pdf_model_params").get("ocr_model_ep")
         self.pdf_model_params = self.config.get("pdf_model_params")
         topdf_model_params = self.config.get("topdf_model_params", {})
         self.pdf_creator = Any2PdfCreator(topdf_model_params)

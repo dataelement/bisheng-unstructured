@@ -4,7 +4,7 @@ import os
 import tempfile
 
 import requests
-from fastapi import Depends, FastAPI, Header, HTTPException, Request, status
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import ORJSONResponse
 
@@ -77,6 +77,9 @@ async def update_config(inp: ConfigInput):
         config_dict = {"pdf_model_params": pdf_model_params}
     else:
         config_dict = inp.dict()
+
+    with open(config_file, 'wb') as file:
+        file.write(json.loads(config_dict))
 
     pipeline.update_config(config_dict)
     return {"status": "OK"}
