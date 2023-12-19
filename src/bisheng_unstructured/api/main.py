@@ -15,7 +15,6 @@ from .types import ConfigInput, UnstructuredInput, UnstructuredOutput
 
 logger = get_logger("BishengUns", "/app/log/bisheng-uns.log")
 
-
 # Fastapi App
 
 
@@ -90,6 +89,7 @@ async def config():
 
 @app.post("/v1/etl4llm/predict", response_model=UnstructuredOutput)
 async def etl4_llm(inp: UnstructuredInput):
+
     filename = inp.filename
     b64_data = inp.b64_data
     file_type = filename.rsplit(".", 1)[1].lower()

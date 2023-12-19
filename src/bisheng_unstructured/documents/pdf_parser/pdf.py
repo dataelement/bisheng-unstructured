@@ -1,26 +1,18 @@
 """Loads PDF with semantic partition."""
 import base64
-import concurrent
 import io
 import json
-import logging
-import os
 import re
-import tempfile
 import time
-from abc import ABC
 from collections import Counter
 from concurrent.futures import ThreadPoolExecutor
 from copy import deepcopy
 from dataclasses import dataclass
-from pathlib import Path
-from typing import Any, Iterator, List, Mapping, Optional, Union
-from urllib.parse import urlparse
+from typing import Any, List, Optional, Union
 
 import fitz as pymupdf
 import numpy as np
 import pypdfium2
-import requests
 from shapely import Polygon
 from shapely import box as Rect
 
@@ -28,7 +20,6 @@ from bisheng_unstructured.common import Timer
 from bisheng_unstructured.documents.base import Document, Page
 from bisheng_unstructured.documents.elements import (
     ElementMetadata,
-    ListItem,
     NarrativeText,
     Table,
     Text,
@@ -46,7 +37,8 @@ from bisheng_unstructured.models import LayoutAgent, OCRAgent, TableAgent, Table
 from .blob import Blob
 
 ZH_CHAR = re.compile("[\u4e00-\u9fa5]")
-ENG_WORD = re.compile(pattern=r"^[a-zA-Z0-9?><;,{}[\]\-_+=!@#$%\^&*|']*$", flags=re.DOTALL)
+ENG_WORD = re.compile(pattern=r"^[a-zA-Z0-9?><;,{}[\]\-_+=!@#$%\^&*|']*$",
+                      flags=re.DOTALL)
 RE_MULTISPACE_INCLUDING_NEWLINES = re.compile(pattern=r"\s+", flags=re.DOTALL)
 
 
@@ -105,7 +97,8 @@ def order_by_tbyx(block_info, th=10):
             # restore the order using the
             bbox_jplus1 = res[j + 1].bbox
             bbox_j = res[j].bbox
-            if abs(bbox_jplus1[1] - bbox_j[1]) < th and (bbox_jplus1[0] < bbox_j[0]):
+            if abs(bbox_jplus1[1] - bbox_j[1]) < th and (bbox_jplus1[0]
+                                                         < bbox_j[0]):
                 tmp = deepcopy(res[j])
                 res[j] = deepcopy(res[j + 1])
                 res[j + 1] = deepcopy(tmp)
@@ -161,6 +154,7 @@ class BlockInfo:
 
 
 class Segment:
+
     def __init__(self, seg):
         self.whole = seg
         self.segs = []
@@ -315,9 +309,8 @@ class PDFDocument(Document):
             if block_type != 0:
                 bbox = block["bbox"]
                 block_text = ""
-                block_info = BlockInfo(
-                    [bbox[0], bbox[1], bbox[2], bbox[3]], block_text, block_no, block_type
-                )
+                block_info = BlockInfo([bbox[0], bbox[1], bbox[2], bbox[3]],
+                                       block_text, block_no, block_type)
                 line_blocks.append(block_info)
                 line_words_info.append((None, None))
 
@@ -334,7 +327,8 @@ class PDFDocument(Document):
                         c = char["c"]
                         if c == " ":
                             if cont_bboxes:
-                                word_bbox = merge_rects(np.asarray(cont_bboxes))
+                                word_bbox = merge_rects(
+                                    np.asarray(cont_bboxes))
                                 word = "".join(cont_text)
                                 words.append(word)
                                 words_bboxes.append(word_bbox)
@@ -354,10 +348,14 @@ class PDFDocument(Document):
                     continue
 
                 line_words_info.append((words, words_bboxes))
-                line_text = "".join([char["c"] for span in line["spans"] for char in span["chars"]])
+                line_text = "".join([
+                    char["c"] for span in line["spans"]
+                    for char in span["chars"]
+                ])
                 bb0, bb1, bb2, bb3 = merge_rects(np.asarray(words_bboxes))
 
-                block_info = BlockInfo([bb0, bb1, bb2, bb3], line_text, block_no, block_type)
+                block_info = BlockInfo([bb0, bb1, bb2, bb3], line_text,
+                                       block_no, block_type)
                 line_blocks.append(block_info)
 
         return line_blocks, line_words_info
@@ -372,9 +370,8 @@ class PDFDocument(Document):
             if block_type != 0:
                 bbox = block["bbox"]
                 block_text = ""
-                block_info = BlockInfo(
-                    [bbox[0], bbox[1], bbox[2], bbox[3]], block_text, block_no, block_type
-                )
+                block_info = BlockInfo([bbox[0], bbox[1], bbox[2], bbox[3]],
+                                       block_text, block_no, block_type)
                 line_blocks.append(block_info)
                 line_words_info.append((None, None))
 
@@ -389,9 +386,8 @@ class PDFDocument(Document):
                 line_words_info.append((words, words_bbox))
 
                 line_text = "".join([span["text"] for span in line["spans"]])
-                block_info = BlockInfo(
-                    [bbox[0], bbox[1], bbox[2], bbox[3]], line_text, block_no, block_type
-                )
+                block_info = BlockInfo([bbox[0], bbox[1], bbox[2], bbox[3]],
+                                       line_text, block_no, block_type)
                 line_blocks.append(block_info)
 
         return line_blocks, line_words_info
@@ -407,7 +403,10 @@ class PDFDocument(Document):
             if block_type != 0:
                 block_text = ""
                 block_info = BlockInfo(
-                    [block_bbox[0], block_bbox[1], block_bbox[2], block_bbox[3]],
+                    [
+                        block_bbox[0], block_bbox[1], block_bbox[2],
+                        block_bbox[3]
+                    ],
                     block_text,
                     block_no,
                     block_type,
@@ -421,7 +420,8 @@ class PDFDocument(Document):
             block_lines = []
             for line in lines:
                 block_words.extend([span["text"] for span in line["spans"]])
-                block_words_bbox.extend([span["bbox"] for span in line["spans"]])
+                block_words_bbox.extend(
+                    [span["bbox"] for span in line["spans"]])
                 line_text = "".join([span["text"] for span in line["spans"]])
                 block_lines.append(line_text)
 
@@ -450,7 +450,8 @@ class PDFDocument(Document):
             block_no = i
             block_text = texts[i]
             b0, b1, b2, b3 = get_hori_rect(bboxes[i])
-            block_info = BlockInfo([b0, b1, b2, b3], block_text, block_no, block_type)
+            block_info = BlockInfo([b0, b1, b2, b3], block_text, block_no,
+                                   block_type)
 
             blocks.append(block_info)
             blocks_words_info.append(([block_text], [[b0, b1, b2, b3]]))
@@ -463,7 +464,8 @@ class PDFDocument(Document):
         result = self.table_det_agent.predict(inp)
         table_layout = []
         for bb in result["bboxes"]:
-            coords = ((bb[0], bb[1]), (bb[2], bb[3]), (bb[4], bb[5]), (bb[6], bb[7]))
+            coords = ((bb[0], bb[1]), (bb[2], bb[3]), (bb[4], bb[5]), (bb[6],
+                                                                       bb[7]))
             poly = Polygon(coords)
             table_layout.append((poly, TABLE_ID))
 
@@ -471,7 +473,8 @@ class PDFDocument(Document):
         result_layout = []
         for e in layout_blocks["result"]:
             bb = e["bbox"]
-            coords = ((bb[0], bb[1]), (bb[2], bb[3]), (bb[4], bb[5]), (bb[6], bb[7]))
+            coords = ((bb[0], bb[1]), (bb[2], bb[3]), (bb[4], bb[5]), (bb[6],
+                                                                       bb[7]))
             poly = Polygon(coords)
             label = e["category_id"]
             if label == TABLE_ID:
@@ -500,7 +503,12 @@ class PDFDocument(Document):
 
         return semantic_polys, semantic_labels
 
-    def _allocate_semantic(self, textpage_info, layout, b64_image, is_scan=True, lang="zh"):
+    def _allocate_semantic(self,
+                           textpage_info,
+                           layout,
+                           b64_image,
+                           is_scan=True,
+                           lang="zh"):
         class_name = ["印章", "图片", "标题", "段落", "表格", "页眉", "页码", "页脚"]
         effective_class_inds = [3, 4, 5, 999]
         non_conti_class_ids = [6, 7, 8]
@@ -591,11 +599,13 @@ class PDFDocument(Document):
         # print('layout_info', layout_info)
 
         if self.enhance_table:
-            semantic_polys, semantic_labels = self._enhance_table_layout(b64_image, layout)
+            semantic_polys, semantic_labels = self._enhance_table_layout(
+                b64_image, layout)
         else:
             for info in layout_info["result"]:
                 bbs = info["bbox"]
-                coords = ((bbs[0], bbs[1]), (bbs[2], bbs[3]), (bbs[4], bbs[5]), (bbs[6], bbs[7]))
+                coords = ((bbs[0], bbs[1]), (bbs[2], bbs[3]), (bbs[4], bbs[5]),
+                          (bbs[6], bbs[7]))
                 semantic_polys.append(Polygon(coords))
                 semantic_labels.append(info["category_id"])
 
@@ -604,7 +614,8 @@ class PDFDocument(Document):
         semantic_bboxes = []
         for poly in semantic_polys:
             x, y = poly.exterior.coords.xy
-            semantic_bboxes.append([x[0], y[0], x[1], y[1], x[2], y[2], x[3], y[3]])
+            semantic_bboxes.append(
+                [x[0], y[0], x[1], y[1], x[2], y[2], x[3], y[3]])
 
         # calculate containing overlap
         sem_cnt = len(semantic_polys)
@@ -652,10 +663,8 @@ class PDFDocument(Document):
                 ord_ind = np.min(ori_orders)
                 mask[ind] = 1
                 new_block_info.append(
-                    BlockInfo(
-                        [rect[0], rect[1], rect[2], rect[3]], "", -1, -1, ts, rs, ind, ord_ind
-                    )
-                )
+                    BlockInfo([rect[0], rect[1], rect[2], rect[3]], "", -1, -1,
+                              ts, rs, ind, ord_ind))
 
             elif np.all(mask[start:end] == 0):
                 rect = merge_rects(text_rects[start:end])
@@ -674,10 +683,8 @@ class PDFDocument(Document):
                 mask[start:end] = 1
 
                 new_block_info.append(
-                    BlockInfo(
-                        [rect[0], rect[1], rect[2], rect[3]], "", -1, -1, ts, rs, pos, ord_ind
-                    )
-                )
+                    BlockInfo([rect[0], rect[1], rect[2], rect[3]], "", -1, -1,
+                              ts, rs, pos, ord_ind))
 
         for i in range(texts_cnt):
             if mask[i] == 0:
@@ -685,7 +692,9 @@ class PDFDocument(Document):
                 r = np.asarray(b.bbox)
                 ord_ind = b.block_no
 
-                new_block_info.append(BlockInfo(b.bbox, "", -1, -1, [texts[i]], [r], [i], ord_ind))
+                new_block_info.append(
+                    BlockInfo(b.bbox, "", -1, -1, [texts[i]], [r], [i],
+                              ord_ind))
 
         timer.toc()
 
@@ -782,7 +791,8 @@ class PDFDocument(Document):
                 table_layout.append((block_ind, html, h_bbox))
                 # print('---missing table---', block_ind, html)
             else:
-                table_layout.append((block_ind, table_result["htmls"][0], h_bbox))
+                table_layout.append(
+                    (block_ind, table_result["htmls"][0], h_bbox))
 
         for i, table_html, h_bbox in table_layout:
             table_md = transform_html_table_to_md(table_html)
@@ -956,9 +966,12 @@ class PDFDocument(Document):
                 # print('---table join---', c0, c1, row0, row1, r1_w, r0_w)
 
                 if c0 < SIMI_WIDTH_THRESHOLD and c1:
-                    has_header = np.all([e0 == e1 for e0, e1 in zip(row0, row1)])
-                    new_text = merge_md_tables([b0.block_text, b1.block_text], has_header)
-                    new_html_text = merge_html_tables([b0.html_text, b1.html_text], has_header)
+                    has_header = np.all(
+                        [e0 == e1 for e0, e1 in zip(row0, row1)])
+                    new_text = merge_md_tables([b0.block_text, b1.block_text],
+                                               has_header)
+                    new_html_text = merge_html_tables(
+                        [b0.html_text, b1.html_text], has_header)
                     new_block = b1
                     new_block.block_text = new_text
                     new_block.html_text = new_html_text
@@ -996,7 +1009,8 @@ class PDFDocument(Document):
                     e = prev_ind + len(text) - 1
                     indexes = [[s, e]]
                     extra_data.update({"indexes": indexes})
-                    metadata = ElementMetadata(text_as_html=clean_html, extra_data=extra_data)
+                    metadata = ElementMetadata(text_as_html=clean_html,
+                                               extra_data=extra_data)
                     element = Table(text=text, metadata=metadata)
                 else:
                     prev_ind = 0
@@ -1046,7 +1060,8 @@ class PDFDocument(Document):
             b64_data = base64.b64encode(bytes_img).decode()
             layout_inp = {"b64_image": b64_data}
             layout = self.layout_agent.predict(layout_inp)
-            blocks = self._allocate_semantic(textpage_info, layout, b64_data, is_scan, lang)
+            blocks = self._allocate_semantic(textpage_info, layout, b64_data,
+                                             is_scan, lang)
             return blocks
 
         with blob.as_bytes_io() as file_path:
@@ -1057,7 +1072,9 @@ class PDFDocument(Document):
             n = min(n, max_page)
 
             sample_n = min(5, fitz_doc.page_count)
-            type_texts = [page.get_text() for page in fitz_doc.pages(0, sample_n)]
+            type_texts = [
+                page.get_text() for page in fitz_doc.pages(0, sample_n)
+            ]
             type_texts = "".join(type_texts)
             zh_n = len(re.findall(ZH_CHAR, type_texts))
             total_n = len(type_texts)
@@ -1091,7 +1108,9 @@ class PDFDocument(Document):
                     else:
                         textpage_info = (None, None)
 
-                    futures.append(executor.submit(_task, textpage_info, bytes_img, is_scan, lang))
+                    futures.append(
+                        executor.submit(_task, textpage_info, bytes_img,
+                                        is_scan, lang))
 
                 idx = start
                 for future in futures:

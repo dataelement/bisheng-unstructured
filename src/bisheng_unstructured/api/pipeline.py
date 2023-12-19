@@ -1,5 +1,5 @@
 import json
-from typing import Dict
+import os
 
 from bisheng_unstructured.common import get_logger
 from bisheng_unstructured.documents.html_utils import save_to_txt, visualize_html
@@ -57,8 +57,19 @@ PARTITION_MAP = {
 
 
 class Pipeline(object):
+
     def __init__(self, config_file: str):
-        self.config = json.load(open(config_file))
+        ''' k8s 使用cm 创建环境变量'''
+        tmp_dict = json.load(open(config_file))
+        pdf_model_params = {
+            "layout_ep": os.getenv("layout_ep", tmp_dict.get("layout_ep")),
+            "cell_model_ep": os.getenv("cell_model_ep", tmp_dict.get("cell_model_ep")),
+            "rowcol_model_ep": os.getenv("rowcol_model_ep", tmp_dict.get("rowcol_model_ep")),
+            "table_model_ep": os.getenv("table_model_ep", tmp_dict.get("table_model_ep")),
+            "ocr_model_ep": os.getenv("ocr_model_ep", tmp_dict.get("ocr_model_ep"))
+        }
+
+        self.config = {"pdf_model_params": pdf_model_params}
         self.pdf_model_params = self.config.get("pdf_model_params")
         topdf_model_params = self.config.get("topdf_model_params", {})
         self.pdf_creator = Any2PdfCreator(topdf_model_params)
