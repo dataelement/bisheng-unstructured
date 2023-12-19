@@ -4,7 +4,7 @@ import os
 import tempfile
 
 import requests
-from fastapi import Depends, FastAPI, Header, HTTPException, Request, status
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import ORJSONResponse
 
@@ -14,7 +14,6 @@ from .pipeline import Pipeline
 from .types import ConfigInput, UnstructuredInput, UnstructuredOutput
 
 logger = get_logger("BishengUns", "/app/log/bisheng-uns.log")
-
 
 # Fastapi App
 
@@ -71,6 +70,8 @@ async def update_config(inp: ConfigInput):
     }
 
     if inp.rt_ep is not None:
+        # update environment
+        os.environ['rt_server'] = inp.rt_ep
         pdf_model_params = {}
         for k, v in pdf_model_params_temp.items():
             pdf_model_params[k] = v.format(inp.rt_ep)
@@ -78,6 +79,10 @@ async def update_config(inp: ConfigInput):
         config_dict = {"pdf_model_params": pdf_model_params}
     else:
         config_dict = inp.dict()
+
+    # update persist data
+    with open(config_file, 'wb') as file:
+        file.write(json.loads(config_dict))
 
     pipeline.update_config(config_dict)
     return {"status": "OK"}
@@ -90,6 +95,7 @@ async def config():
 
 @app.post("/v1/etl4llm/predict", response_model=UnstructuredOutput)
 async def etl4_llm(inp: UnstructuredInput):
+
     filename = inp.filename
     b64_data = inp.b64_data
     file_type = filename.rsplit(".", 1)[1].lower()

@@ -1,5 +1,5 @@
 FROM dataelement/bisheng-unstructured-runtime:0.0.1
-MAINTAINER "Dataelem inc."
+LABEL org.opencontainers.image.authors="Dataelem inc."
 
 ARG BISHENG_UNS_VER=0.0.2
 
