@@ -90,10 +90,11 @@ class Text2PDF(object):
         cmd_template = """
           pandoc -o {1} --pdf-engine=xelatex
               --lua-filter=/opt/pandoc/unnested-table.lua
+              --template /opt/pandoc/pandoc-3.1.9/share/templates/default.latex
               {0}
               -V mainfont="Alibaba PuHuiTi"
               -V sansfont="Alibaba PuHuiTi"
-              -V monofont="Cascadia Mono"
+              -V monofont="Adobe Heiti Std"
               -V CJKmainfont="Alibaba PuHuiTi"
               -V CJKsansfont="Alibaba PuHuiTi"
               -V CJKmonofont="Adobe Heiti Std"

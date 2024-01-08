@@ -22,6 +22,14 @@ def test3():
     engine.render(input_file, output_file)
 
 
+def test4():
+    input_file = "./examples/docs/4d9dce37d9c5d7542ca89bf8c1984e7f.md"
+    output_file = "./data/4d9dce37d9c5d7542ca89bf8c1984e7f.pdf"
+    engine = Text2PDF()
+    engine.render(input_file, output_file)
+
+
+test4()
 # test1()
-test2()
+# test2()
 # test3()
