@@ -26,6 +26,12 @@ class OCRAgent(object):
                 "det": "general_text_det_mrcnn_v2.0",
                 "recog": "transformer-hand-v1.16-faster",
             },
+            "print_patch_recog": {
+                "recog": "transformer-blank-v0.2-faster",
+            },
+            "hand_patch_recog": {
+                "recog": "transformer-hand-v1.16-faster",
+            },
         }
 
     def predict(self, inp):
