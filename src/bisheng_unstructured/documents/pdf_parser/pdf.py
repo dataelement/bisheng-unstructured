@@ -13,6 +13,7 @@ from typing import Any, List, Optional, Union
 import fitz as pymupdf
 import numpy as np
 import pypdfium2
+from PIL import Image, ImageOps
 from shapely import Polygon
 from shapely import box as Rect
 
@@ -32,13 +33,25 @@ from bisheng_unstructured.documents.markdown import (
     transform_html_table_to_md,
     transform_list_to_table,
 )
-from bisheng_unstructured.models import LayoutAgent, OCRAgent, TableAgent, TableDetAgent
+from bisheng_unstructured.models import (
+    FormulaAgent,
+    LayoutAgent,
+    OCRAgent,
+    TableAgent,
+    TableDetAgent,
+)
 
 from .blob import Blob
 
 ZH_CHAR = re.compile("[\u4e00-\u9fa5]")
 ENG_WORD = re.compile(pattern=r"^[a-zA-Z0-9?><;,{}[\]\-_+=!@#$%\^&*|']*$", flags=re.DOTALL)
 RE_MULTISPACE_INCLUDING_NEWLINES = re.compile(pattern=r"\s+", flags=re.DOTALL)
+
+
+def read_image(path):
+    img = Image.open(path)
+    img = ImageOps.exif_transpose(img).convert("RGB")
+    return img
 
 
 def merge_rects(bboxes):
@@ -250,6 +263,7 @@ class PDFDocument(Document):
         verbose: bool = False,
         enhance_table: bool = True,
         keep_text_in_image: bool = True,
+        support_formula: bool = False,
         n_parallel: int = 10,
         **kwargs,
     ) -> None:
@@ -258,6 +272,7 @@ class PDFDocument(Document):
         self.table_agent = TableAgent(**model_params)
         self.ocr_agent = OCRAgent(**model_params)
         self.table_det_agent = TableDetAgent(**model_params)
+        self.formula_agent = FormulaAgent(**model_params)
 
         self.with_columns = with_columns
         self.is_join_table = is_join_table
@@ -269,6 +284,7 @@ class PDFDocument(Document):
         self.file = file
         self.enhance_table = enhance_table
         self.keep_text_in_image = keep_text_in_image
+        self.support_formula = support_formula
         self.n_parallel = n_parallel
         super().__init__()
 
@@ -428,11 +444,24 @@ class PDFDocument(Document):
 
         return blocks, blocks_words_info
 
-    def _extract_blocks_from_image(self, b64_image):
+    def _extract_blocks_from_image(self, b64_image, enable_formula=False):
         inp = {"b64_image": b64_image}
-        ocr_result = self.ocr_agent.predict(inp)
-        texts = ocr_result["result"]["ocr_result"]["texts"]
-        bboxes = ocr_result["result"]["ocr_result"]["bboxes"]
+        if enable_formula:
+            # step 1. formula detection
+            # step 2. crop the formula region and call formula recognition
+            # step 3. mask the formula region and call general ocr
+            # step 4. split the text lines by embedding formula region
+            # step 5. recog the segmented line patches
+            # step 6. merge the segmented line patches and sort by tbyx
+            bytes_data = base64.b64decode(b64_image)
+            img = read_image(io.BytesIO(bytes_data))
+            inp = {"b64_image": b64_image}
+            mf_outs = self.formula_agent.predict(inp, img)
+            text, bboxes = self.ocr_agent.predict_with_mask(img, mf_outs)
+        else:
+            ocr_result = self.ocr_agent.predict(inp)
+            texts = ocr_result["result"]["ocr_result"]["texts"]
+            bboxes = ocr_result["result"]["ocr_result"]["bboxes"]
 
         blocks = []
         blocks_words_info = []
@@ -447,15 +476,6 @@ class PDFDocument(Document):
             blocks_words_info.append(([block_text], [[b0, b1, b2, b3]]))
 
         return blocks, blocks_words_info
-
-    def _extract_blocks_from_image_with_formula(self, b64_image):
-        # step 1. formula detection
-        # step 2. crop the formula region and call formula recognition
-        # step 3. mask the formula region and call general ocr
-        # step 4. split the text lines by embedding formula region
-        # step 5. recog the segmented line patches
-        # step 6. merge the segmented line patches and sort by tbyx
-        return [], []
 
     def _enhance_table_layout(self, b64_image, layout_blocks):
         TABLE_ID = 5
@@ -517,12 +537,13 @@ class PDFDocument(Document):
             # blocks, words = self._extract_lines_v2(textpage)
             blocks, words = textpage_info
         else:
-            blocks, words = self._extract_blocks_from_image(b64_image)
+            blocks, words = self._extract_blocks_from_image(b64_image, self.support_formula)
 
         timer.toc()
         # print('---line blocks---')
         # for b in blocks:
         #     print(b)
+        return
 
         if self.support_rotate and is_scan:
             rotation_matrix = np.asarray(page.rotation_matrix).reshape((3, 2))
@@ -1067,6 +1088,8 @@ class PDFDocument(Document):
                 lang = "zh" if zh_n > 200 or zh_n / total_n > 0.5 else "eng"
             else:
                 lang = "zh"
+
+            is_scan = True
 
             tic = time.time()
             if self.verbose:
