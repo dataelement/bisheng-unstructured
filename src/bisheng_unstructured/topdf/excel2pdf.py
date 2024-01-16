@@ -40,14 +40,6 @@ class ExcelToPDF(object):
         except Exception as e:
             raise Exception(f"err in excel2pdf: [{e}]")
 
-    @staticmethod
-    def run(cmd):
-        try:
-            p = subprocess.Popen(cmd, shell=True, preexec_fn=os.setsid)
-            p.wait(timeout=10)
-        except subprocess.TimeoutExpired:
-            os.killpg(os.getpgid(p.pid), signal.SIGTERM)
-            raise Exception("error in transforming xlsx to pdf")
 
     def render(self, input_file, output_file=None, to_bytes=False):
         type_ext = input_file.rsplit(".", 1)[-1]
