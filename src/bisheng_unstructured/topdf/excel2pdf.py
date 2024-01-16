@@ -32,6 +32,8 @@ class ExcelToPDF(object):
         try:
             p = subprocess.Popen(cmd, shell=True, preexec_fn=os.setsid)
             p.wait(timeout=10)
+            if p.returncode != 0:
+                raise Exception(f"err in excel2pdf: return code is {p.returncode}")
         except subprocess.TimeoutExpired:
             os.killpg(os.getpgid(p.pid), signal.SIGTERM)
             raise Exception("timeout in transforming xlsx to pdf")
