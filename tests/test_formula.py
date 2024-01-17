@@ -32,7 +32,7 @@ def test_formula1():
     pdf_doc = PDFDocument(
         file=filename,
         model_params=model_params,
-        start=5,
+        start=6,
         n=1,
         verbose=True,
         n_parallel=1,

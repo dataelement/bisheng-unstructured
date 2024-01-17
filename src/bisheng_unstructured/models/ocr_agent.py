@@ -11,7 +11,7 @@ from shapely import Polygon
 def save_pillow_to_base64(image):
     buffered = io.BytesIO()
     image.save(buffered, format="PNG")
-    img_str = base64.b64encode(buffered.getvalue())
+    img_str = base64.b64encode(buffered.getvalue()).decode()
     return img_str
 
 
@@ -21,12 +21,12 @@ def get_hori_rect_v2(rot_rect):
     x1 = np.max(arr[:, 0])
     y0 = np.min(arr[:, 1])
     y1 = np.max(arr[:, 1])
-    return np.asarray[[x0, y0], [x1, y0], [x1, y1], [x0, y1]]
+    return [[x0, y0], [x1, y0], [x1, y1], [x0, y1]]
 
 
 def bbox_overlap(bbox0, bbox1):
-    poly0 = Polygon(*bbox0.tolist())
-    poly1 = Polygon(*bbox1.tolist())
+    poly0 = Polygon(bbox0)
+    poly1 = Polygon(bbox1)
     iou = poly0.intersection(poly1).area * 1.0 / poly1.area
     return iou
 
@@ -34,10 +34,10 @@ def bbox_overlap(bbox0, bbox1):
 def is_valid_box(box, min_height=8, min_width=2) -> bool:
     # follow code from open project pix2text
     return (
-        box[0, 0] + min_width <= box[1, 0]
-        and box[1, 1] + min_height <= box[2, 1]
-        and box[2, 0] >= box[3, 0] + min_width
-        and box[3, 1] >= box[0, 1] + min_height
+        box[0][0] + min_width <= box[1][0]
+        and box[1][1] + min_height <= box[2][1]
+        and box[2][0] >= box[3][0] + min_width
+        and box[3][1] >= box[0][1] + min_height
     )
 
 
@@ -46,7 +46,7 @@ def split_line_image(line_box, embed_mfs):
     # code from open project pix2text
     line_box = line_box[0]
     if not embed_mfs:
-        return [{"position": line_box.int().tolist(), "type": "text"}]
+        return [{"bbox": line_box, "type": "text"}]
     embed_mfs.sort(key=lambda x: x["position"][0])
 
     outs = []
@@ -92,7 +92,7 @@ class OCRAgent(object):
                 "recog": "transformer-hand-v1.16-faster",
             },
             "det": {
-                "recog": "general_text_det_mrcnn_v2.0",
+                "det": "general_text_det_mrcnn_v2.0",
             },
         }
 
@@ -126,7 +126,8 @@ class OCRAgent(object):
         img = np.array(img0.copy())
         for box_info in mf_out:
             if box_info["type"] in ("isolated", "embedding"):
-                box = box_info["box"]
+                box = np.asarray(box_info["box"]).reshape((4, 2))
+
                 xmin, ymin = max(0, int(box[0][0]) - 1), max(0, int(box[0][1]) - 1)
                 xmax, ymax = (
                     min(img0.size[0], int(box[2][0]) + 1),
@@ -138,7 +139,8 @@ class OCRAgent(object):
         params = copy.deepcopy(self.scene_mapping["det"])
         req_data = {"param": params, "data": [b64_image]}
         det_result = self._get_ep_result(self.ep, req_data)
-        bboxes = det_result["result"]["ocr_result"]["bboxes"]
+        bboxes = det_result["result"]["boxes"]
+        print("---stats---\n", bboxes, mf_out)
 
         EMB_BBOX_THREHOLD = 0.7
         text_bboxes = []
@@ -150,22 +152,26 @@ class OCRAgent(object):
             embed_mfs = []
             for box_info in mf_out:
                 if box_info["type"] == "embedding":
-                    emb_bbox = box_info["position"]
+                    bb = box_info["box"]
+                    emb_bbox = [[bb[0], bb[1]], [bb[2], bb[3]], [bb[4], bb[5]], [bb[6], bb[7]]]
                     bbox_iou = bbox_overlap(hori_bbox, emb_bbox)
+                    # print('---bbox_iou', bbox_iou)
                     if bbox_iou > EMB_BBOX_THREHOLD:
                         embed_mfs.append(
                             {
-                                "position": box_info[0].int().tolist(),
+                                "position": emb_bbox,
                                 "text": box_info["text"],
                                 "type": box_info["type"],
                             }
                         )
 
-            ocr_boxes = split_line_image(hori_bbox, embed_mfs)
-            text_bboxes.extend(ocr_boxes)
+            print("----overlaps", hori_bbox, embed_mfs)
+            # ocr_boxes = split_line_image(hori_bbox, embed_mfs)
+            # text_bboxes.extend(ocr_boxes)
 
-        outs = copy(mf_out)
+        # outs = copy(mf_out)
+
         # recog text for extracted text boxes
-        params = copy.deepcopy(self.scene_mapping["print_recog"])
-        req_data = {"param": params, "data": [b64_image], "bbox": text_bboxes}
-        recog_result = self._get_ep_result(self.ep, req_data)
+        # params = copy.deepcopy(self.scene_mapping["print_recog"])
+        # req_data = {"param": params, "data": [b64_image], "bbox": text_bboxes}
+        # recog_result = self._get_ep_result(self.ep, req_data)

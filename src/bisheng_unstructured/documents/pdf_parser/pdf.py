@@ -457,7 +457,9 @@ class PDFDocument(Document):
             img = read_image(io.BytesIO(bytes_data))
             inp = {"b64_image": b64_image}
             mf_outs = self.formula_agent.predict(inp, img)
+            print("---mf_outs", mf_outs)
             text, bboxes = self.ocr_agent.predict_with_mask(img, mf_outs)
+            return
         else:
             ocr_result = self.ocr_agent.predict(inp)
             texts = ocr_result["result"]["ocr_result"]["texts"]
@@ -1067,6 +1069,8 @@ class PDFDocument(Document):
             b64_data = base64.b64encode(bytes_img).decode()
             layout_inp = {"b64_image": b64_data}
             layout = self.layout_agent.predict(layout_inp)
+            print("layout", layout)
+            layout = None
             blocks = self._allocate_semantic(textpage_info, layout, b64_data, is_scan, lang)
             return blocks
 
@@ -1106,6 +1110,10 @@ class PDFDocument(Document):
                     img_byte_arr = io.BytesIO()
                     pil_image.save(img_byte_arr, format="PNG")
                     bytes_img = img_byte_arr.getvalue()
+
+                    # with open('/public/bisheng/latex_data/eng2.png', 'wb') as f:
+                    #     f.write(bytes_img)
+
                     # timer.toc()
                     # print('pil image png convert', timer.get())
 
