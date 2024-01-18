@@ -264,6 +264,7 @@ class PDFDocument(Document):
         enhance_table: bool = True,
         keep_text_in_image: bool = True,
         support_formula: bool = False,
+        enable_isolated_formula: bool = True,
         n_parallel: int = 10,
         **kwargs,
     ) -> None:
@@ -285,6 +286,7 @@ class PDFDocument(Document):
         self.enhance_table = enhance_table
         self.keep_text_in_image = keep_text_in_image
         self.support_formula = support_formula
+        self.enable_isolated_formula = enable_isolated_formula
         self.n_parallel = n_parallel
         super().__init__()
 
@@ -444,26 +446,26 @@ class PDFDocument(Document):
 
         return blocks, blocks_words_info
 
-    def _extract_blocks_from_image(self, b64_image, enable_formula=False):
+    def _extract_blocks_from_image(self, b64_image, img):
         inp = {"b64_image": b64_image}
-        if enable_formula:
+        if self.support_formula:
             # step 1. formula detection
             # step 2. crop the formula region and call formula recognition
             # step 3. mask the formula region and call general ocr
             # step 4. split the text lines by embedding formula region
             # step 5. recog the segmented line patches
-            # step 6. merge the segmented line patches and sort by tbyx
-            bytes_data = base64.b64decode(b64_image)
-            img = read_image(io.BytesIO(bytes_data))
+            # step 6. merge the segmented line patches and sort by tlbr
             inp = {"b64_image": b64_image}
-            mf_outs = self.formula_agent.predict(inp, img)
-            print("---mf_outs", mf_outs)
-            text, bboxes = self.ocr_agent.predict_with_mask(img, mf_outs)
-            return
+            mf_outs = self.formula_agent.predict(
+                inp, img, enable_isolated_formula=self.enable_isolated_formula
+            )
+            texts, bboxes, words_info = self.ocr_agent.predict_with_mask(img, mf_outs)
         else:
+            # get general ocr result
             ocr_result = self.ocr_agent.predict(inp)
             texts = ocr_result["result"]["ocr_result"]["texts"]
             bboxes = ocr_result["result"]["ocr_result"]["bboxes"]
+            words_info = []
 
         blocks = []
         blocks_words_info = []
@@ -472,10 +474,18 @@ class PDFDocument(Document):
             block_no = i
             block_text = texts[i]
             b0, b1, b2, b3 = get_hori_rect(bboxes[i])
+            block_type = 0
+            if words_info:
+                if "isolated" in words_info[i][2]:
+                    block_type = 1000
+
             block_info = BlockInfo([b0, b1, b2, b3], block_text, block_no, block_type)
 
             blocks.append(block_info)
-            blocks_words_info.append(([block_text], [[b0, b1, b2, b3]]))
+            if not words_info:
+                blocks_words_info.append(([block_text], [[b0, b1, b2, b3]]))
+            else:
+                blocks_words_info.append((words_info[i][0], words_info[i][1]))
 
         return blocks, blocks_words_info
 
@@ -522,13 +532,25 @@ class PDFDocument(Document):
 
         return semantic_polys, semantic_labels
 
-    def _allocate_semantic(self, textpage_info, layout, b64_image, is_scan=True, lang="zh"):
+    def _enhance_texts_info_with_formula(self, b64_image, img, textpage_info):
+        if self.support_formula:
+            blocks, words = self.formula_agent.predict_with_text_block(
+                b64_image, img, textpage_info, enable_isolated_formula=self.enable_isolated_formula
+            )
+            return blocks, words
+        else:
+            return textpage_info
+
+    def _allocate_semantic(
+        self, textpage_info, layout, b64_image, img, is_scan=True, lang="zh", rot_matrix=None
+    ):
         class_name = ["印章", "图片", "标题", "段落", "表格", "页眉", "页码", "页脚"]
-        effective_class_inds = [3, 4, 5, 999]
+        effective_class_inds = [3, 4, 5, 999, 1000]
         non_conti_class_ids = [6, 7, 8]
         TEXT_ID = 4
         TABLE_ID = 5
         IMAGE_ID = 2
+        FORMULA_ID = 1000
 
         timer = Timer()
         if not is_scan:
@@ -537,18 +559,20 @@ class PDFDocument(Document):
             # blocks, words = self._extract_blocks(textpage)
             # blocks, words = self._extract_lines(textpage)
             # blocks, words = self._extract_lines_v2(textpage)
-            blocks, words = textpage_info
+            # blocks, words = textpage_info
+            blocks, words = self._enhance_texts_info_with_formula(b64_image, img, textpage_info)
         else:
-            blocks, words = self._extract_blocks_from_image(b64_image, self.support_formula)
+            blocks, words = self._extract_blocks_from_image(b64_image, img)
 
         timer.toc()
         # print('---line blocks---')
         # for b in blocks:
         #     print(b)
-        return
 
+        # Phrase0. Support rotated pdf page, some pdf page are rotated
+        # and the rotation matrix is stored in the layout, rotate it first
         if self.support_rotate and is_scan:
-            rotation_matrix = np.asarray(page.rotation_matrix).reshape((3, 2))
+            rotation_matrix = np.asarray(rot_matrix).reshape((3, 2))
             c1 = (rotation_matrix[0, 0] - 1) <= 1e-6
             c2 = (rotation_matrix[1, 1] - 1) <= 1e-6
             is_rotated = c1 and c2
@@ -556,7 +580,7 @@ class PDFDocument(Document):
             if is_rotated:
                 # new_blocks = []
                 new_words = []
-                for b, w in zip(blocks, words_info):
+                for b, w in zip(blocks, words):
                     bbox = np.asarray(b.bbox)
                     aug_bbox = bbox.reshape((-1, 2))
                     padding = np.ones((len(aug_bbox), 1))
@@ -609,10 +633,10 @@ class PDFDocument(Document):
         semantic_polys = []
         semantic_labels = []
 
-        # layout_info = json.loads(layout.page_content)
+        # Enhance the table layout, the table layout is not very accurate in
+        # a layout model, use the independent table detection model to enhance
         layout_info = layout
         # print('layout_info', layout_info)
-
         if self.enhance_table:
             semantic_polys, semantic_labels = self._enhance_table_layout(b64_image, layout)
         else:
@@ -624,6 +648,11 @@ class PDFDocument(Document):
 
         timer.toc()
 
+        # phrase 1. merge continuous text block by the containing matrix
+        # 1) calculate the overlap between semantic and text bboxes
+        # 2) find max continuous text blocks with threshold keep.
+        # 3) merge the continuous text blocks
+        # 4) get the new blocks
         semantic_bboxes = []
         for poly in semantic_polys:
             x, y = poly.exterior.coords.xy
@@ -646,7 +675,6 @@ class PDFDocument(Document):
         # for t in texts:
         #     print(t)
 
-        # phrase 1. merge continuous text block by the containing matrix
         CONTRAIN_THRESHOLD = 0.70
         contain_info = []
         for i in range(sem_cnt):
@@ -679,6 +707,9 @@ class PDFDocument(Document):
                         [rect[0], rect[1], rect[2], rect[3]], "", -1, -1, ts, rs, ind, ord_ind
                     )
                 )
+                max_block_type = np.max([blocks[i].block_type for i in ind])
+                if max_block_type == FORMULA_ID:
+                    new_block_info[-1].layout_type = FORMULA_ID
 
             elif np.all(mask[start:end] == 0):
                 rect = merge_rects(text_rects[start:end])
@@ -702,6 +733,10 @@ class PDFDocument(Document):
                     )
                 )
 
+                max_block_type = np.max([blocks[i].block_type for i in pos])
+                if max_block_type == FORMULA_ID:
+                    new_block_info[-1].layout_type = FORMULA_ID
+
         for i in range(texts_cnt):
             if mask[i] == 0:
                 b = blocks[i]
@@ -709,6 +744,8 @@ class PDFDocument(Document):
                 ord_ind = b.block_no
 
                 new_block_info.append(BlockInfo(b.bbox, "", -1, -1, [texts[i]], [r], [i], ord_ind))
+                if b.block_type == FORMULA_ID:
+                    new_block_info[-1].layout_type = FORMULA_ID
 
         timer.toc()
 
@@ -742,10 +779,15 @@ class PDFDocument(Document):
         #     print([round(r_, 3) for r_ in r])
         # print('---semantic_labels---', semantic_labels)
 
-        # phrase 2. allocate label
+        # phrase 2. allocate label by the layout information
+        # 1) calculate the overlap between semantic and merge block bboxes
+        # 2) find the most overlap semantic label, allocate it
+        # 3) for table, parse the table layout
+        # 4) for formula, keep it.
         OVERLAP_THRESHOLD = 0.2
         # texts_labels = []
         DEF_SEM_LABEL = 999
+        FORMULA_LABEL = 1000
         table_infos = []
         for j in range(texts_cnt):
             ind = np.argwhere(overlap_matrix[:, j] > OVERLAP_THRESHOLD)[:, 0]
@@ -757,6 +799,10 @@ class PDFDocument(Document):
                 sem_label = items[0][0]
                 if len(items) > 1 and TEXT_ID in dict(items):
                     sem_label = TEXT_ID
+
+            # Don't allocate the isolated formula block again
+            if new_blocks[j].layout_type == FORMULA_ID:
+                continue
 
             if sem_label == TABLE_ID:
                 b = new_blocks[j]
@@ -1065,13 +1111,13 @@ class PDFDocument(Document):
         page_inds = []
         lang = None
 
-        def _task(textpage_info, bytes_img, is_scan, lang):
+        def _task(textpage_info, bytes_img, img, is_scan, lang, rot_matirx):
             b64_data = base64.b64encode(bytes_img).decode()
             layout_inp = {"b64_image": b64_data}
             layout = self.layout_agent.predict(layout_inp)
-            print("layout", layout)
-            layout = None
-            blocks = self._allocate_semantic(textpage_info, layout, b64_data, is_scan, lang)
+            blocks = self._allocate_semantic(
+                textpage_info, layout, b64_data, img, is_scan, lang, rot_matrix
+            )
             return blocks
 
         with blob.as_bytes_io() as file_path:
@@ -1093,28 +1139,45 @@ class PDFDocument(Document):
             else:
                 lang = "zh"
 
-            is_scan = True
+            # is_scan = True
 
-            tic = time.time()
+            timer = Timer()
             if self.verbose:
                 print(f"{n} pages need be processed...")
+
+            bytes_imgs = []
+            page_imgs = []
+            for idx in range(start, start + n):
+                page = pdf_doc.get_page(idx)
+                pil_image = page.render().to_pil()
+                page_imgs.append(pil_image)
+                img_byte_arr = io.BytesIO()
+                pil_image.save(img_byte_arr, format="PNG")
+                bytes_img = img_byte_arr.getvalue()
+                bytes_imgs.append(bytes_img)
+
+            timer.toc()
+            print("pdfium render image", timer.get())
 
             results = []
             with ThreadPoolExecutor(max_workers=self.n_parallel) as executor:
                 futures = []
                 for idx in range(start, start + n):
                     # timer = Timer()
+                    # Becareful: pymupdf doc load page in parallel will cause
+                    # corrupted double-linked list, do not keep page object
                     textpage = fitz_doc.load_page(idx).get_textpage()
-                    page = pdf_doc.get_page(idx)
-                    pil_image = page.render().to_pil()
-                    img_byte_arr = io.BytesIO()
-                    pil_image.save(img_byte_arr, format="PNG")
-                    bytes_img = img_byte_arr.getvalue()
+                    rot_matrix = None
 
-                    # with open('/public/bisheng/latex_data/eng2.png', 'wb') as f:
-                    #     f.write(bytes_img)
-
+                    # page = pdf_doc.get_page(idx)
+                    # pil_image = page.render().to_pil()
+                    # img_byte_arr = io.BytesIO()
+                    # pil_image.save(img_byte_arr, format="PNG")
+                    # bytes_img = img_byte_arr.getvalue()
                     # timer.toc()
+
+                    bytes_img = bytes_imgs[idx - start]
+                    img = page_imgs[idx - start]
                     # print('pil image png convert', timer.get())
 
                     if not is_scan:
@@ -1122,7 +1185,11 @@ class PDFDocument(Document):
                     else:
                         textpage_info = (None, None)
 
-                    futures.append(executor.submit(_task, textpage_info, bytes_img, is_scan, lang))
+                    futures.append(
+                        executor.submit(
+                            _task, textpage_info, bytes_img, img, is_scan, lang, rot_matrix
+                        )
+                    )
 
                 idx = start
                 for future in futures:

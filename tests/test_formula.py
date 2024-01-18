@@ -40,11 +40,11 @@ def test_formula1():
     )
     pages = pdf_doc.pages
     elements = pdf_doc.elements
-    for e in elements:
-        print("---", e)
+    # for e in elements:
+    #     print("---", e)
 
-    # visualize_html(elements, "data/baby_rmt.pdf")
-    # save_to_txt(elements, "data/baby_rmt.pdf")
+    visualize_html(elements, "data/baby_rmt.html")
+    save_to_txt(elements, "data/baby_rmt.txt")
 
 
 test_formula1()

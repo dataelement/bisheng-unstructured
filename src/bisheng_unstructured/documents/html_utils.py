@@ -1,3 +1,4 @@
+# flake8: noqa
 from bisheng_unstructured.documents.markdown import transform_html_table_to_md
 
 
@@ -5,6 +6,16 @@ def visualize_html(elements, output_file=None):
     html_prefix = """
     <html>
     <head>
+    <script type="text/javascript" async src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.7/MathJax.js?config=TeX-MML-AM_CHTML"></script>
+    <script type="text/x-mathjax-config">
+        MathJax.Hub.Config({
+	    tex2jax: {
+	        inlineMath: [['$','$'], ['\\(','\\)']],
+	        processEscapes: true
+	    }
+	});
+    </script>
+
     <style>
         table {
           font-family: arial, sans-serif;

@@ -1,65 +1,26 @@
 import base64
 import copy
 import io
+from functools import cmp_to_key
+from typing import Any, Dict, List, Union
 
+import cv2
 import numpy as np
 import requests
 from PIL import Image
-from shapely import Polygon
 
-
-def save_pillow_to_base64(image):
-    buffered = io.BytesIO()
-    image.save(buffered, format="PNG")
-    img_str = base64.b64encode(buffered.getvalue()).decode()
-    return img_str
-
-
-def get_hori_rect_v2(rot_rect):
-    arr = np.asarray(rot_rect, dtype=np.float32).reshape((4, 2))
-    x0 = np.min(arr[:, 0])
-    x1 = np.max(arr[:, 0])
-    y0 = np.min(arr[:, 1])
-    y1 = np.max(arr[:, 1])
-    return [[x0, y0], [x1, y0], [x1, y1], [x0, y1]]
-
-
-def bbox_overlap(bbox0, bbox1):
-    poly0 = Polygon(bbox0)
-    poly1 = Polygon(bbox1)
-    iou = poly0.intersection(poly1).area * 1.0 / poly1.area
-    return iou
-
-
-def is_valid_box(box, min_height=8, min_width=2) -> bool:
-    # follow code from open project pix2text
-    return (
-        box[0][0] + min_width <= box[1][0]
-        and box[1][1] + min_height <= box[2][1]
-        and box[2][0] >= box[3][0] + min_width
-        and box[3][1] >= box[0][1] + min_height
-    )
-
-
-def split_line_image(line_box, embed_mfs):
-    # split line bbox by embedding formula bbox
-    # code from open project pix2text
-    line_box = line_box[0]
-    if not embed_mfs:
-        return [{"bbox": line_box, "type": "text"}]
-    embed_mfs.sort(key=lambda x: x["position"][0])
-
-    outs = []
-    start = int(line_box[0])
-    xmax, ymin, ymax = int(line_box[2]), int(line_box[1]), int(line_box[-1])
-    for mf in embed_mfs:
-        _xmax = min(xmax, int(mf["position"][0]) + 1)
-        if start + 8 < _xmax:
-            outs.append({"position": [start, ymin, _xmax, ymax], "type": "text"})
-        start = int(mf["position"][2])
-    if start < xmax:
-        outs.append({"position": [start, ymin, xmax, ymax], "type": "text"})
-    return outs
+from .common import (
+    bbox_overlap,
+    draw_polygon,
+    get_hori_rect_v2,
+    is_valid_box,
+    join_line_outs,
+    list2box,
+    pil2opencv,
+    save_pillow_to_base64,
+    sort_boxes,
+    split_line_image,
+)
 
 
 # OCR Agent Version 0.1, update at 2023.08.18
@@ -74,6 +35,7 @@ class OCRAgent(object):
             "enable_huarong_box_adjust": True,
             "rotateupright": False,
             "support_long_image_segment": True,
+            "split_long_sentence_blank": True,
         }
 
         self.scene_mapping = {
@@ -122,7 +84,25 @@ class OCRAgent(object):
         except Exception as e:
             raise Exception(f"exception in formula agent predict: [{e}]")
 
-    def predict_with_mask(self, img0, mf_out, scene="print"):
+    def _visualize(self, img0, bboxes, mf_out):
+        # draw bbox
+
+        img0.save("/public/bisheng/latex_data/xx0.png", format="PNG")
+
+        cv_img = pil2opencv(img0)
+        for bbox in bboxes:
+            bbox = np.asarray(get_hori_rect_v2(bbox))
+            # bbox = np.asarray(bbox).reshape((4, 2))
+            cv_img = draw_polygon(cv_img, bbox, is_rect=True)
+
+        for info in mf_out:
+            text = "e" if info["type"] == "embedding" else "f"
+            bbox = np.asarray(info["box"]).reshape((4, 2))
+            cv_img = draw_polygon(cv_img, bbox, text, color=(0, 0, 255))
+
+        cv2.imwrite("/public/bisheng/latex_data/xx.png", cv_img)
+
+    def predict_with_mask(self, img0, mf_out, scene="print", **kwargs):
         img = np.array(img0.copy())
         for box_info in mf_out:
             if box_info["type"] in ("isolated", "embedding"):
@@ -135,12 +115,17 @@ class OCRAgent(object):
                 )
                 img[ymin:ymax, xmin:xmax, :] = 255
 
-        b64_image = save_pillow_to_base64(Image.fromarray(img))
-        params = copy.deepcopy(self.scene_mapping["det"])
+        masked_image = Image.fromarray(img)
+        b64_image = save_pillow_to_base64(masked_image)
+        # b64_image = save_pillow_to_base64(img0)
+
+        params = copy.deepcopy(self.params)
+        params.update(self.scene_mapping["det"])
         req_data = {"param": params, "data": [b64_image]}
         det_result = self._get_ep_result(self.ep, req_data)
         bboxes = det_result["result"]["boxes"]
-        print("---stats---\n", bboxes, mf_out)
+
+        # self._visualize(masked_image, bboxes, mf_out)
 
         EMB_BBOX_THREHOLD = 0.7
         text_bboxes = []
@@ -153,9 +138,8 @@ class OCRAgent(object):
             for box_info in mf_out:
                 if box_info["type"] == "embedding":
                     bb = box_info["box"]
-                    emb_bbox = [[bb[0], bb[1]], [bb[2], bb[3]], [bb[4], bb[5]], [bb[6], bb[7]]]
+                    emb_bbox = [bb[0], bb[1], bb[4], bb[5]]
                     bbox_iou = bbox_overlap(hori_bbox, emb_bbox)
-                    # print('---bbox_iou', bbox_iou)
                     if bbox_iou > EMB_BBOX_THREHOLD:
                         embed_mfs.append(
                             {
@@ -165,13 +149,31 @@ class OCRAgent(object):
                             }
                         )
 
-            print("----overlaps", hori_bbox, embed_mfs)
-            # ocr_boxes = split_line_image(hori_bbox, embed_mfs)
-            # text_bboxes.extend(ocr_boxes)
+            ocr_boxes = split_line_image(hori_bbox, embed_mfs)
+            text_bboxes.extend(ocr_boxes)
 
-        # outs = copy(mf_out)
+        # recog the patches
+        recog_data = []
+        for bbox in text_bboxes:
+            b64_data = save_pillow_to_base64(masked_image.crop(bbox["position"]))
+            recog_data.append(b64_data)
 
-        # recog text for extracted text boxes
-        # params = copy.deepcopy(self.scene_mapping["print_recog"])
-        # req_data = {"param": params, "data": [b64_image], "bbox": text_bboxes}
-        # recog_result = self._get_ep_result(self.ep, req_data)
+        params = copy.deepcopy(self.params)
+        params.update(self.scene_mapping["print_recog"])
+        req_data = {"param": params, "data": recog_data}
+        recog_result = self._get_ep_result(self.ep, req_data)
+
+        outs = []
+        for bbox, text in zip(text_bboxes, recog_result["result"]["texts"]):
+            bbs = list2box(*bbox["position"])
+            outs.append({"text": text, "position": bbs, "type": "text"})
+
+        for info in mf_out:
+            bbs = np.asarray(info["box"]).reshape((4, 2))
+            outs.append({"text": info["text"], "position": bbs, "type": info["type"]})
+
+        outs = sort_boxes(outs, key="position")
+        texts, bboxes, words_info = join_line_outs(outs)
+
+        # self._visualize(masked_image, bboxes, [])
+        return texts, bboxes, words_info
