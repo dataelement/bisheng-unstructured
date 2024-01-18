@@ -1,3 +1,4 @@
 data/
 sftp-config.json
 .isort.cfg
+.idea/
