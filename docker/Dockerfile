@@ -11,7 +11,7 @@ ENV HTTPS_PROXY=
 RUN mkdir -p /opt/bisheng-unstructured/bin
 COPY ./docker/entrypoint.sh /opt/bisheng-unstructured/bin/
 COPY config /opt/bisheng-unstructured/
-COPY ./src/bisheng_unstructured/* /opt/bisheng_unstructured/
+COPY ./src/bisheng_unstructured/ /opt/bisheng-unstructured/
 
 # FIX the high risk scan
 RUN rm -f /opt/texlive/2023/texmf-dist/scripts/tlcockpit/tlcockpit.jar
