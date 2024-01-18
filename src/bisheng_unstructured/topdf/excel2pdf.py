@@ -10,12 +10,12 @@ import openpyxl
 class ExcelToPDF(object):
     def __init__(self, kwargs={}):
         cmd_template = """
-          soffice --convert-to
+          soffice -env:SingleAppInstance=\"false\" -env:UserInstallation=\"file://{1}\" --convert-to
           "pdf:calc_pdf_Export:{\"SinglePageSheets\":{\"type\":\"boolean\",\"value\":\"true\"}}"
-          --outdir
+          --outdir \"{1}\" \"{0}\"
         """
         cmd_template2 = """
-            soffice --headless --convert-to xlsx --outdir
+            soffice --headless -env:SingleAppInstance=\"false\" -env:UserInstallation=\"file://{1}\" --convert-to xlsx --outdir \"{1}\" \"{0}\"
         """
 
         cmd_template3 = 'sed -e \'s/\t/,/g\' "{0}" > "{1}"'
@@ -56,7 +56,7 @@ class ExcelToPDF(object):
                 type_ext = "csv"
 
             if type_ext in ["xls", "csv"]:
-                cmd = self.cmd_template2 + ' "{1}" "{0}"'.format(input_file, temp_dir)
+                cmd = self.cmd_template2.format(input_file, temp_dir)
                 ExcelToPDF.run(cmd)
                 filename = filename.rsplit(".", 1)[0] + ".xlsx"
                 input_file = os.path.join(temp_dir, filename)
@@ -70,7 +70,7 @@ class ExcelToPDF(object):
             input_file = os.path.join(temp_dir, filename)
             wb.save(input_file)
 
-            cmd = self.cmd_template + ' "{1}" "{0}"'.format(input_file, temp_dir)
+            cmd = self.cmd_template.format(input_file, temp_dir)
             ExcelToPDF.run(cmd)
 
             if output_file is not None:
