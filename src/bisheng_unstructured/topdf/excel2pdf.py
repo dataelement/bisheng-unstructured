@@ -11,7 +11,7 @@ class ExcelToPDF(object):
     def __init__(self, kwargs={}):
         cmd_template = """
           soffice -env:SingleAppInstance=\"false\" -env:UserInstallation=\"file://{1}\" --convert-to
-          "pdf:calc_pdf_Export:{\"SinglePageSheets\":{\"type\":\"boolean\",\"value\":\"true\"}}"
+          "pdf:calc_pdf_Export:{{\"SinglePageSheets\":{{\"type\":\"boolean\",\"value\":\"true\"}}}}"
           --outdir \"{1}\" \"{0}\"
         """
         cmd_template2 = """
