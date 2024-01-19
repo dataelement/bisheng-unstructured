@@ -264,7 +264,7 @@ class PDFDocument(Document):
         enhance_table: bool = True,
         keep_text_in_image: bool = True,
         support_formula: bool = False,
-        enable_isolated_formula: bool = True,
+        enable_isolated_formula: bool = False,
         n_parallel: int = 10,
         **kwargs,
     ) -> None:
@@ -535,7 +535,11 @@ class PDFDocument(Document):
     def _enhance_texts_info_with_formula(self, b64_image, img, textpage_info):
         if self.support_formula:
             blocks, words = self.formula_agent.predict_with_text_block(
-                b64_image, img, textpage_info, enable_isolated_formula=self.enable_isolated_formula
+                b64_image,
+                img,
+                textpage_info,
+                enable_isolated_formula=self.enable_isolated_formula,
+                ocr_agent=self.ocr_agent,
             )
             return blocks, words
         else:
@@ -1184,6 +1188,8 @@ class PDFDocument(Document):
                         textpage_info = self._extract_lines_v2(textpage)
                     else:
                         textpage_info = (None, None)
+
+                    # blocks = _task(textpage_info, bytes_img, img, is_scan, lang, rot_matrix)
 
                     futures.append(
                         executor.submit(

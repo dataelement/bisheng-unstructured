@@ -250,6 +250,36 @@ def sort_boxes(boxes: List[dict], key="position") -> List[List[dict]]:
     return lines
 
 
+def split_line_bbox_by_overlap_bbox(line_box, embed_box):
+    # keep the order for split box and embed box
+    if not embed_box:
+        return [(line_box, "text", None)]
+
+    ind = list(range(len(embed_box)))
+    ind.sort(key=lambda x: embed_box[x][0])
+    x0, y0, x1, y1 = line_box
+    outs = []
+    new_x0 = int(x0)
+    MIN_WIDTH = 3
+    for i in ind:
+        _x1 = min(x1, int(embed_box[i][0]) + 1)
+        if new_x0 + 8 < _x1:
+            bb = [new_x0, y0, _x1, y1]
+            outs.append((bb, "text", None))
+            outs.append((None, "embed", i))
+        else:
+            outs.append((None, "embed", i))
+
+        new_x0 = int(embed_box[i][2])
+
+    if new_x0 < x1:
+        bb = [new_x0, y0, x1, y1]
+        if x1 - new_x0 > MIN_WIDTH:
+            outs.append((bb, "text", None))
+
+    return outs
+
+
 def split_line_image(line_box, embed_mfs):
     # split line bbox by embedding formula bbox
     # code from open project pix2text

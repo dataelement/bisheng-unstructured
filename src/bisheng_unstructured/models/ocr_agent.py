@@ -177,3 +177,15 @@ class OCRAgent(object):
 
         # self._visualize(masked_image, bboxes, [])
         return texts, bboxes, words_info
+
+    def predict_with_patches(self, pil_images, scene="print_recog", **kwargs):
+        recog_data = []
+        for pil_img in pil_images:
+            b64_data = save_pillow_to_base64(pil_img)
+            recog_data.append(b64_data)
+
+        params = copy.deepcopy(self.params)
+        params.update(self.scene_mapping[scene])
+        req_data = {"param": params, "data": recog_data}
+        recog_result = self._get_ep_result(self.ep, req_data)
+        return recog_result["result"]["texts"]

@@ -33,9 +33,9 @@ def test_formula1():
         file=filename,
         model_params=model_params,
         start=6,
-        n=1,
+        n=10,
         verbose=True,
-        n_parallel=1,
+        n_parallel=10,
         support_formula=True,
     )
     pages = pdf_doc.pages

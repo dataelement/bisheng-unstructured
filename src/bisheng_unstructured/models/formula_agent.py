@@ -8,7 +8,14 @@ import requests
 
 from bisheng_unstructured.common import Timer
 
-from .common import bbox_iou, bbox_overlap, draw_polygon, pil2opencv, save_pillow_to_base64
+from .common import (
+    bbox_overlap,
+    draw_polygon,
+    pil2opencv,
+    save_pillow_to_base64,
+    smart_join,
+    split_line_bbox_by_overlap_bbox,
+)
 
 
 class FormulaAgent(object):
@@ -111,9 +118,10 @@ class FormulaAgent(object):
 
         timer.toc()
 
-        text_bbs = [b.bbox for b in textpage_info[0]]
+        # text_bbs = [b.bbox for b in textpage_info[0]]
         # self._visualize(image, text_bbs, mf_out)
 
+        # process the isolated formula
         # calculate overlap matrix
         blocks, words_info = textpage_info
         mf_cnt = len(mf_out)
@@ -126,21 +134,68 @@ class FormulaAgent(object):
                 bbox1 = blocks[j].bbox
                 overlap_matrix[i, j] = bbox_overlap(bbox0, bbox1)
 
+        isolated_ind = []
         mask_ind = []
         replace_info = []
         for i in range(mf_cnt):
             if mf_out[i]["type"] == "isolated":
                 ind = np.argwhere(overlap_matrix[i, :] > OVERLAP_THRESHOLD)[:, 0]
+                isolated_ind.extend(ind)
                 min_ind = np.min(ind)
                 mask_ind.extend([j for j in ind if j != min_ind])
                 replace_info.append((min_ind, mf_out[i]["text"]))
 
+        # process for the embedding formula
+        overlap_matrix2 = np.zeros((texts_cnt, mf_cnt))
+        OVERLAP_THRESHOLD = 0.7
+        for i in range(texts_cnt):
+            if i in isolated_ind:
+                continue
+
+            for j in range(mf_cnt):
+                bbox0 = blocks[i].bbox
+                bbox1 = mf_out[j]["box"]
+                overlap_matrix2[i, j] = bbox_overlap(bbox0, bbox1)
+
         # embedding formula will split the normal text line
-        for j in range(texts_cnt):
-            ind = np.argwhere(overlap_matrix[:, j] > OVERLAP_THRESHOLD)[:, 0]
+        ocr_agent = kwargs.get("ocr_agent")
+        for i in range(texts_cnt):
+            if i in isolated_ind:
+                continue
+
+            ind = np.argwhere(overlap_matrix2[i, :] > OVERLAP_THRESHOLD)[:, 0]
             ind = [k for k in ind if mf_out[k]["type"] == "embedding"]
-            embed_mfs = []
+            if len(ind) == 0:
+                continue
+
             mf_boxes = [mf_out[k]["box"] for k in ind]
+            line_mf_out = [mf_out[k] for k in ind]
+            line_bbox = blocks[i].bbox
+            split_outs = split_line_bbox_by_overlap_bbox(line_bbox, mf_boxes)
+
+            text_bboxes = []
+            text_index_map = {}
+            line_texts = [""] * len(split_outs)
+            text_ind = 0
+            for k in range(len(split_outs)):
+                bbox, text_type, mf_ind = split_outs[k]
+                if text_type == "text":
+                    text_bboxes.append(bbox)
+                    text_index_map[text_ind] = k
+                    text_ind += 1
+                else:
+                    line_texts[k] = line_mf_out[mf_ind]["text"]
+
+            # recog the patches
+            if len(text_bboxes) > 0:
+                patches = [image.crop(bb) for bb in text_bboxes]
+                texts = ocr_agent.predict_with_patches(patches)
+                for k, text in enumerate(texts):
+                    line_texts[text_index_map[k]] = text
+
+            line_texts = [t for t in line_texts if t != ""]
+            line_full_text = smart_join(line_texts)
+            blocks[i].block_text = line_full_text
 
         for ind, text in replace_info:
             blocks[ind].block_text = text
