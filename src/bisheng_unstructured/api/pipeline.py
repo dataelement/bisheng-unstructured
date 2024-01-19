@@ -57,9 +57,8 @@ PARTITION_MAP = {
 
 
 class Pipeline(object):
-
     def __init__(self, config_file: str):
-        ''' k8s 使用cm 创建环境变量'''
+        """k8s 使用cm 创建环境变量"""
         tmp_dict = json.load(open(config_file))
         rt_ep = os.getenv("rt_server")
         if rt_ep:
@@ -89,7 +88,7 @@ class Pipeline(object):
             result = UnstructuredOutput(b64_pdf=output)
             return result
         except Exception as e:
-            logger.error(f"error in topdf filename=[{inp.filename}] err=[{e}]")
+            logger.error(f"error in topdf filename=[{inp.filename}] err=[{e}]", exc_info=True)
             return UnstructuredOutput(status_code=400, status_message=str(e))
 
     def predict(self, inp: UnstructuredInput) -> UnstructuredOutput:
