@@ -31,7 +31,7 @@ class ExcelToPDF(object):
     def run(cmd):
         try:
             p = subprocess.Popen(cmd, shell=True, preexec_fn=os.setsid)
-            p.wait(timeout=10)
+            p.wait(timeout=30)
             if p.returncode != 0:
                 raise Exception(f"err in excel2pdf: return code is {p.returncode}")
         except subprocess.TimeoutExpired:
