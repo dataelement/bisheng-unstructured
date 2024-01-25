@@ -44,7 +44,10 @@ def get_logger(name, log_file=None, log_level=logging.INFO):
     if log_file is not None and len(global_log_file) == 0:
         log_path = os.path.dirname(log_file)
         if not os.path.exists(log_path):
-            os.makedirs(log_path)
+            try:
+                os.makedirs(log_path)
+            except FileExistsError:
+                pass
 
         global_log_file.append(log_file)
 
