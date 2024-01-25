@@ -5,7 +5,9 @@ on:
     # Sequence of patterns matched against refs/tags
     tags:
       - "v*"
-
+env:
+  DOCKERHUB_REPO: dataelement/
+  
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
@@ -34,3 +36,51 @@ jobs:
         run: |
           pip install twine
           twine upload dist/* -u ${{ secrets.PYPI_USER }} -p ${{ secrets.PYPI_PASSWORD }} --repository pypi
+
+  build-docker:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Set python version 3.8
+        uses: actions/setup-python@v1
+        with:
+          python-version: 3.8
+      
+      # 登录 docker hub
+      - name: Login to DockerHub
+        uses: docker/login-action@v1
+        with:
+          # GitHub Repo => Settings => Secrets 增加 docker hub 登录密钥信息
+          # DOCKERHUB_USERNAME 是 docker hub 账号名.
+          # DOCKERHUB_TOKEN: docker hub => Account Setting => Security 创建.
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+          
+       # 构建 backend 并推送到 Docker hub
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v1
+
+      - name: set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build backend and push
+        id: docker_build_backend
+        uses: docker/build-push-action@v2
+        with:
+          # backend 的context目录
+          context: "./src/backend/"
+          # 是否 docker push
+          push: true
+          # docker build arg, 注入 APP_NAME/APP_VERSION
+          platforms: linux/amd64,linux/arm64
+          build-args: |
+            APP_NAME="bisheng-backend"
+            APP_VERSION=${{ github.ref_name }}
+          # 生成两个 docker tag: ${APP_VERSION} 和 latest
+          tags: |
+            ${{ env.DOCKERHUB_REPO }}bisheng-backend:latest
+            ${{ env.DOCKERHUB_REPO }}bisheng-backend:${{ github.ref_name }}
+
+      
