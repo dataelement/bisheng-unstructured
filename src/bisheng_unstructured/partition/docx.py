@@ -1,4 +1,5 @@
 import os
+import re
 import tempfile
 from tempfile import SpooledTemporaryFile
 from typing import IO, BinaryIO, List, Optional, Tuple, Union, cast
@@ -12,6 +13,7 @@ from docx.text.run import Run
 from lxml import etree
 
 from bisheng_unstructured.cleaners.core import clean_bullets
+from bisheng_unstructured.common import get_logger
 from bisheng_unstructured.documents.elements import (
     Address,
     Element,
@@ -44,6 +46,8 @@ from bisheng_unstructured.partition.text_type import (
     is_us_city_state_zip,
 )
 from bisheng_unstructured.utils import dependency_exists
+
+logger = get_logger("BishengUns", "/app/log/bisheng-uns.log")
 
 if dependency_exists("pypandoc"):
     import pypandoc
@@ -253,7 +257,7 @@ def _paragraph_to_element(
     if len(text.strip()) == 0:
         return None
 
-    if "Heading" in paragraph.style.name:
+    if paragraph.style and "Heading" in paragraph.style.name:
         element = Title(text)
         try:
             element.metadata.extra_data = {"title_level": int(paragraph.style.name[-1])}
