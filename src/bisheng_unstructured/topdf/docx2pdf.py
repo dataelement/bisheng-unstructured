@@ -67,13 +67,22 @@ class DocxToPDFV1(object):
     @staticmethod
     def run(cmd):
         try:
-            p = subprocess.Popen(cmd, shell=True, preexec_fn=os.setsid)
-            p.wait(timeout=30)
-            if p.returncode != 0:
-                raise Exception(f"err in doc2pdf: return code is {p.returncode}")
+            p = subprocess.Popen(
+                cmd,
+                shell=True,
+                preexec_fn=os.setsid,
+                stderr=subprocess.PIPE,
+                stdout=subprocess.PIPE,
+            )
+            exit_code = p.wait(timeout=30)
+            if exit_code != 0:
+                stdout, stderr = p.communicate()
+                raise Exception(
+                    f"err in doc2pdf: return code is {exit_code}, stderr: {stderr}, stdout: {stdout}"
+                )
         except subprocess.TimeoutExpired:
             os.killpg(os.getpgid(p.pid), signal.SIGTERM)
-            raise Exception("timeout in transforming doc to pdf")
+            raise Exception(f"timeout in transforming doc to pdf, cnd: [{cmd}]")
         except Exception as e:
             raise Exception(f"err in doc2pdf: [{e}]")
 
