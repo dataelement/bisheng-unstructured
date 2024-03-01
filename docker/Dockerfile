@@ -21,6 +21,7 @@ WORKDIR /opt/bisheng-unstructured
 COPY ./src/ /opt/bisheng-unstructured/
 COPY ./requirements.txt /opt/bisheng-unstructured/
 COPY ./docker/wkhtmltox_0.12.6-1.focal_amd64.deb /opt/bisheng-unstructured/
+RUN apt update && apt install -y xfonts-utils xfonts-encodings xfonts-base xfonts-75dpi
 RUN dpkg -i wkhtmltox_0.12.6-1.focal_amd64.deb
 
 # install requirements
