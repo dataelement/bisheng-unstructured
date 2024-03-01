@@ -20,11 +20,14 @@ WORKDIR /opt/bisheng-unstructured
 # Copy source code
 COPY ./src/ /opt/bisheng-unstructured/
 COPY ./requirements.txt /opt/bisheng-unstructured/
+COPY ./docker/wkhtmltox_0.12.6-1.focal_amd64.deb /opt/bisheng-unstructured/
+RUN dpkg -i wkhtmltox_0.12.6-1.focal_amd64.deb
 
 # install requirements
 RUN python3 -m pip install --upgrade pip
 RUN pip install -r requirements.txt
 
 RUN apt-get clean &&  rm -rf /var/lib/apt/lists/* && rm -rf /root/.cache/pip
-
+# 禁止写core dump文件
+RUN ulimit -c 0
 CMD ["bash", "bin/entrypoint.sh"]
