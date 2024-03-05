@@ -106,7 +106,7 @@ class Text2PDF(object):
         """
 
         cmd_template3 = """
-            wkhtmltopdf --disable-javascript --disable-local-file-access --disable-external-links --no-images {0} {1}
+        wkhtmltopdf --disable-javascript --disable-local-file-access --disable-external-links --no-images "{0}" "{1}"
         """
         if os.getenv("WK_LOAD_IMG"):
             cmd_template3 = cmd_template3.replace("--no-images", "")
