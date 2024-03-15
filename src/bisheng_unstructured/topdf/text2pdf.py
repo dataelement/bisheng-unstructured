@@ -2,7 +2,6 @@ import os
 import shutil
 import signal
 import subprocess
-import tempfile
 from html import parser
 from typing import Tuple
 
@@ -10,6 +9,8 @@ import lxml.html
 import numpy as np
 from lxml import etree
 from lxml.html.clean import Cleaner
+
+from bisheng_unstructured.logger import logger
 
 
 def clean_html(ori_file, new_file):
@@ -163,21 +164,14 @@ class Text2PDF(object):
             Text2PDF.run(cmd)
 
         elif type_ext == "html":
+            cmd = self.cmd_template3.format(input_file, output_file)
             try:
-                with tempfile.TemporaryDirectory() as internal_tmp_dir:
-                    tmp_input = os.path.join(internal_tmp_dir, filename)
-                    clean_html(input_file, tmp_input)
-                    cmd = self.cmd_template.format(tmp_input, output_file)
-                    Text2PDF.run(cmd, timeout=10)
+                Text2PDF.run(cmd, timeout=30)
             except Exception as e:
-                # pandoc失败，尝试用wkhtmltopdf去转换html文件
-                cmd = self.cmd_template3.format(input_file, output_file)
-                try:
-                    Text2PDF.run(cmd, timeout=30)
-                except Exception as e:
-                    # 不存在对应的pdf文件才算真正的失败
-                    if not os.path.exists(output_file):
-                        raise Exception(e)
+                logger.warning(f"html convert to pdf warn: {str(e)}")
+                # 不存在对应的pdf文件才算真正的失败
+                if not os.path.exists(output_file):
+                    raise Exception(e)
 
         if to_bytes:
             return open(output_file, "rb").read()
