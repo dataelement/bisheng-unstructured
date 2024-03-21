@@ -5,6 +5,7 @@ from functools import cmp_to_key
 from typing import Any, Dict, List, Union
 
 import cv2
+import os
 import numpy as np
 import requests
 from PIL import Image
@@ -20,25 +21,18 @@ from .common import (
     save_pillow_to_base64,
     sort_boxes,
     split_line_image,
+    load_json
 )
 
-
-# OCR Agent Version 0.1, update at 2023.08.18
-#  - add predict_with_mask support recog with embedding formula, 2024.01.16
-class OCRAgent(object):
-    def __init__(self, **kwargs):
-        self.ep = kwargs.get("ocr_model_ep")
-        self.client = requests.Session()
-        self.timeout = kwargs.get("timeout", 60)
-        self.params = {
+DEFAULT_CONFIG = {
+    "params": {
             "sort_filter_boxes": True,
             "enable_huarong_box_adjust": True,
             "rotateupright": False,
             "support_long_image_segment": True,
             "split_long_sentence_blank": True,
-        }
-
-        self.scene_mapping = {
+        },
+    "scene_mapping": {
             "print": {
                 "det": "general_text_det_mrcnn_v2.0",
                 "recog": "transformer-blank-v0.2-faster",
@@ -57,6 +51,28 @@ class OCRAgent(object):
                 "det": "general_text_det_mrcnn_v2.0",
             },
         }
+}
+
+
+# OCR Agent Version 0.1, update at 2023.08.18
+#  - add predict_with_mask support recog with embedding formula, 2024.01.16
+class OCRAgent(object):
+    def __init__(self, **kwargs):
+        self.ep = kwargs.get("ocr_model_ep")
+        self.client = requests.Session()
+        self.timeout = kwargs.get("timeout", 60)
+        mdoel_config_path = "/opt/bisheng-unstructured/model_config.json"
+        if os.path.exists(mdoel_config_path):
+            jsoncontent = load_json(mdoel_config_path)
+        else:
+            jsoncontent = None
+        if jsoncontent is not None and "params" in jsoncontent and \
+            "scene_mapping" in jsoncontent:
+            self.params = jsoncontent["params"]
+            self.scene_mapping = jsoncontent["scene_mapping"]
+        else:
+            self.params = DEFAULT_CONFIG["params"]
+            self.scene_mapping = DEFAULT_CONFIG["scene_mapping"]
 
     def predict(self, inp):
         scene = inp.pop("scene", "print")

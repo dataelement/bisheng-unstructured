@@ -3,12 +3,27 @@ import io
 import re
 from functools import cmp_to_key
 from typing import Any, Dict, List, Union
-
+import os
+import json
 import cv2
 import numpy as np
 from PIL import Image, ImageOps
 
 # from shapely import Polygon
+def load_json(file_path, object_hook=dict):
+    if os.path.isfile(file_path):
+        with open(file_path, 'r') as fid:
+            data = json.load(fid, object_pairs_hook=object_hook)
+    elif isinstance(file_path, str):
+        data = json.loads(file_path, object_pairs_hook=object_hook)
+    elif isinstance(file_path, bytes):
+        # file_path = file_path.decode('utf-8').replace("'", '"')
+        file_path = file_path.decode('utf-8')
+        data = json.loads(file_path, object_pairs_hook=object_hook)
+    else:
+        exit('can not open this file')
+
+    return data
 
 
 def read_pil_image(path):
