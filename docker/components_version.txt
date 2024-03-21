@@ -1,1 +1,1 @@
-bisheng-unstructured=0.0.3.post3
+bisheng-unstructured=0.0.3.post4
