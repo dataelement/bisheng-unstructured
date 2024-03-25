@@ -9,7 +9,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import ORJSONResponse
 
 from bisheng_unstructured.common import Timer, get_logger
-
+from bisheng_unstructured.middlewares.http_middleware import CustomMiddleware
 from .pipeline import Pipeline
 from .types import ConfigInput, UnstructuredInput, UnstructuredOutput
 
@@ -49,6 +49,7 @@ def create_app():
         allow_methods=["*"],
         allow_headers=["*"],
     )
+    app.add_middleware(CustomMiddleware)
 
     return app
 
