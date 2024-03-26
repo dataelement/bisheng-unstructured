@@ -6,7 +6,7 @@ import datetime
 from citic_logger import CiticLogger
 
 #系统标识
-system_tag = ''
+system_tag = 'CANGJIE_UNS'
 
 def setup_custom_logger():
     logger = CiticLogger(name='MyAppLogger')
@@ -35,15 +35,15 @@ def citic_logger_info(message , uuid_val, serial_no):
 
 
 def citic_logger_error(error_message):
-    #获取当前时间
-    now = datetime.datetime.now()
-    current_time = now.strftime('%Y-%m-%d %H:%M:%S.%f')
-    #获取进程号和线程号
-    process = os.getpid()
-    thread = threading.get_ident()
-    ERR = ''
-    file,line,_,_ = traceback.extract_tb(e.__trackback__)[-1]
-    POS = f"{file},line{line}"#发送报错代码位置
-    message = f"[{current_time}]|ERROR|{system_tag}|{uuid_val}||{process}|{thread}|||#EX_ERR:POS={POS},ERR={ERR},EMSG={error_message}"
+    # #获取当前时间
+    # now = datetime.datetime.now()
+    # current_time = now.strftime('%Y-%m-%d %H:%M:%S.%f')
+    # #获取进程号和线程号
+    # process = os.getpid()
+    # thread = threading.get_ident()
+    # ERR = ''
+    # file,line,_,_ = traceback.extract_tb(e.__trackback__)[-1]
+    # POS = f"{file},line{line}"#发送报错代码位置
+    # message = f"[{current_time}]|ERROR|{system_tag}|{uuid_val}||{process}|{thread}|||#EX_ERR:POS={POS},ERR={ERR},EMSG={error_message}"
     
-    citic_logger.error(message)
+    citic_logger.err_log(system_tag,error_message,500)
