@@ -1,9 +1,16 @@
 # flake8: noqa
+import copy
 from dataclasses import dataclass
 from typing import Any, List, Optional, Union
+<<<<<<< HEAD
 import numpy as np
 import copy
 import requests
+=======
+
+import requests
+
+>>>>>>> 9d33ce52b5b0d99da95e2e50b476b644d55a8c4c
 
 # 表示1个文本区域
 @dataclass
@@ -16,7 +23,7 @@ class BlockInfo:
     rs: Any = None  # line bboxes, [[x0, y0, x1, y1]]
     ind: List[int] = None
     ord_ind: int = None
-    layout_type: int = None  # 0: pragraph, 1: table
+    layout_type: int = None  # 3: title 4: pragraph, 5: table
     html_text: str = None
 
 def find_xy(box):
@@ -112,6 +119,7 @@ class OCRAgent(object):
     def predict(self, inp) -> List[BlockInfo]:
         scene = inp.pop("scene", "print")
         b64_image = inp.pop("b64_image")
+<<<<<<< HEAD
         params = copy.deepcopy(self.params)
         # params.update(self.scene_mapping[scene])
         params.update(inp)
@@ -181,3 +189,26 @@ class OCRAgent(object):
                 layout_type=0,
             )
             return [b0]
+=======
+        # todo:
+
+        b0 = BlockInfo(
+            bbox=[],
+            block_text="abcdef",
+            block_no=0,
+            ts=["abc", "def"],
+            rs=[[0, 0, 100, 30], [0, 50, 100, 80]],
+            layout_type=4,
+        )
+
+        b1 = BlockInfo(
+            bbox=[],
+            block_text="| h1 | h2 | h3 |\n|-|-|-|\n| data1 | data2 | data3 |",
+            block_no=0,
+            ts=[""],
+            rs=[[0, 50, 100, 80]],
+            layout_type=5,
+        )
+
+        return [b0, b1]
+>>>>>>> 9d33ce52b5b0d99da95e2e50b476b644d55a8c4c
