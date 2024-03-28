@@ -170,6 +170,8 @@ class OCRAgent(object):
                 ))
             return res
         else:
+            text = "".join(up_table['texts'])
+            box = recalculate_xy(up_table['boxs'])
             b0 = BlockInfo(
                 block=[],
                 block_text="abcdef",
