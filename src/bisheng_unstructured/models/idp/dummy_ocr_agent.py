@@ -106,6 +106,24 @@ def process_paragraph(bboxes, texts, rect_box):
 
     return up_table, down_table
 
+def process_whole_paragraph(general_ocr_res):
+    boxes = general_ocr_res["bboxes"]
+    texts = general_ocr_res["texts"]
+    rowcol = general_ocr_res["row_col_info"]
+    
+    max_row = max(row[0] for row in rowcol) + 1
+    max_col = max(row[1] for row in rowcol) + 1
+
+    layout_text = [["" for _ in range(max_col)] for _ in range(max_row)]
+    layout_boxs = [[[] for _ in range(max_col)] for _ in range(max_row)]
+
+    # 填充layout
+    for (row, col), txt, box in zip(rowcol, texts, boxes):
+        layout_text[row][col] = txt
+        layout_boxs[row][col] = box
+    return layout_text, layout_boxs
+
+
 class OCRAgent(object):
     def __init__(self, **kwargs):
         self.ep = kwargs.get("ocr_model_ep")
@@ -122,67 +140,19 @@ class OCRAgent(object):
         req_data = {"param": params, "data": [b64_image]}
         try:
             r = self.client.post(url=self.ep, json=req_data, timeout=self.timeout)
-            # ret = convert_json(r.json())
-            # return ret
+            
         except requests.exceptions.Timeout:
             raise Exception(f"timeout in formula agent predict")
         except Exception as e:
             raise Exception(f"exception in formula agent predict: [{e}]")
         
-        table_rect_box = []
-        table_md_str = ""
-        if 'table_result' in r["data"]["json"] and len(r["data"]["json"]["table_result"][0]["cell_infos"]):
-            table_result = r["data"]["json"]["table_result"][0]["cell_infos"]
-            table_md_str,table_rect_box = process_table(table_result)
-
-        bboxes = r["data"]["json"]["general_ocr_res"]["bboxes"]
-        texts = r["data"]["json"]["general_ocr_res"]["texts"]
-        
-        up_table, down_table = process_paragraph(bboxes, texts, table_rect_box) 
-        res = list()
-        if len(table_rect_box):
-            b1 = BlockInfo(
-                block=[],
-                block_text=table_md_str,
-                block_no=0,
-                ts=[""],
-                rs=[table_rect_box],
-                layout_type=1,
-            )
-            if len(up_table["boxs"]):
-                text = "".join(up_table['texts'])
-                box = recalculate_xy(up_table['boxs'])
-                res.append(BlockInfo(
-                    block=[],
-                    block_text=text,
-                    block_no=0,
-                    ts=[text],
-                    rs=[box],
-                    layout_type=0,
-                ))
-            res.append(b1)
-            if len(down_table["boxs"]):
-                text = "".join(down_table['texts'])
-                box = recalculate_xy(down_table['boxs'])
-                res.append(BlockInfo(
-                    block=[],
-                    block_text=text,
-                    block_no=0,
-                    ts=[text],
-                    rs=[box],
-                    layout_type=0,
-                ))
-            return res
-        else:
-            text = "".join(up_table['texts'])
-            box = recalculate_xy(up_table['boxs'])
-            b0 = BlockInfo(
-                block=[],
-                block_text="abcdef",
-                block_no=0,
-                ts=["abc", "def"],
-                rs=[[0, 0, 100, 30], [0, 50, 100, 80]],
-                layout_type=0,
-            )
-            return [b0]
-
+        layout_text, layout_boxs = process_whole_paragraph(r["data"]["json"]["general_ocr_res"]) 
+        b0 = BlockInfo(
+            block=[],
+            block_text=''.join([''.join(text) for text in layout_text]),
+            block_no=0,
+            ts=[''.join(text) for text in layout_text],
+            rs=[''.join(text) for text in layout_boxs],
+            layout_type=0,
+        )
+        return [b0]
