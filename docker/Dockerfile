@@ -20,8 +20,12 @@ ENV PATH="${PATH}:/root/.local/bin"
 RUN mkdir -p /opt/bisheng-unstructured/bin
 COPY ./docker/entrypoint.sh /opt/bisheng-unstructured/bin/
 COPY config /opt/bisheng-unstructured/
+
 COPY ./src/ /opt/bisheng-unstructured/
 COPY pyproject.toml /opt/bisheng-unstructured/
+
+COPY ./docker/model_config.json  /opt/bisheng-unstructured/
+
 
 # FIX the high risk scan
 RUN rm -f /opt/texlive/2023/texmf-dist/scripts/tlcockpit/tlcockpit.jar
