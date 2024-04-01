@@ -7,7 +7,7 @@ import subprocess
 class PptxToPDF(object):
     def __init__(self, kwargs={}):
         cmd_template = """
-            soffice --headless --convert-to pdf --outdir \"{1}\" \"{0}\"
+            soffice --headless -env:SingleAppInstance=\"false\" -env:UserInstallation=\"file://{1}\" --convert-to pdf --outdir \"{1}\" \"{0}\"
         """
 
         def _norm_cmd(cmd):
@@ -19,7 +19,9 @@ class PptxToPDF(object):
     def run(cmd):
         try:
             p = subprocess.Popen(cmd, shell=True, preexec_fn=os.setsid)
-            p.wait(timeout=10)
+            p.wait(timeout=30)
+            if p.returncode != 0:
+                raise Exception(f"err in pptx2pdf: return code is {p.returncode}")
         except subprocess.TimeoutExpired:
             os.killpg(os.getpgid(p.pid), signal.SIGTERM)
             raise Exception("timeout in transforming pptx to pdf")

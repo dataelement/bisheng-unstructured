@@ -10,12 +10,12 @@ import openpyxl
 class ExcelToPDF(object):
     def __init__(self, kwargs={}):
         cmd_template = """
-          soffice --convert-to
-          "pdf:calc_pdf_Export:{\"SinglePageSheets\":{\"type\":\"boolean\",\"value\":\"true\"}}"
-          --outdir
+          soffice -env:SingleAppInstance=\"false\" -env:UserInstallation=\"file://{1}\" --convert-to
+          "pdf:calc_pdf_Export:{{\"SinglePageSheets\":{{\"type\":\"boolean\",\"value\":\"true\"}}}}"
+          --outdir \"{1}\" \"{0}\"
         """
         cmd_template2 = """
-            soffice --headless --convert-to xlsx --outdir
+            soffice --headless -env:SingleAppInstance=\"false\" -env:UserInstallation=\"file://{1}\" --convert-to xlsx --outdir \"{1}\" \"{0}\"
         """
 
         cmd_template3 = 'sed -e \'s/\t/,/g\' "{0}" > "{1}"'
@@ -31,21 +31,14 @@ class ExcelToPDF(object):
     def run(cmd):
         try:
             p = subprocess.Popen(cmd, shell=True, preexec_fn=os.setsid)
-            p.wait(timeout=10)
+            p.wait(timeout=30)
+            if p.returncode != 0:
+                raise Exception(f"err in excel2pdf: return code is {p.returncode}")
         except subprocess.TimeoutExpired:
             os.killpg(os.getpgid(p.pid), signal.SIGTERM)
             raise Exception("timeout in transforming xlsx to pdf")
         except Exception as e:
             raise Exception(f"err in excel2pdf: [{e}]")
-
-    @staticmethod
-    def run(cmd):
-        try:
-            p = subprocess.Popen(cmd, shell=True, preexec_fn=os.setsid)
-            p.wait(timeout=10)
-        except subprocess.TimeoutExpired:
-            os.killpg(os.getpgid(p.pid), signal.SIGTERM)
-            raise Exception("error in transforming xlsx to pdf")
 
     def render(self, input_file, output_file=None, to_bytes=False):
         type_ext = input_file.rsplit(".", 1)[-1]
@@ -63,7 +56,7 @@ class ExcelToPDF(object):
                 type_ext = "csv"
 
             if type_ext in ["xls", "csv"]:
-                cmd = self.cmd_template2 + ' "{1}" "{0}"'.format(input_file, temp_dir)
+                cmd = self.cmd_template2.format(input_file, temp_dir)
                 ExcelToPDF.run(cmd)
                 filename = filename.rsplit(".", 1)[0] + ".xlsx"
                 input_file = os.path.join(temp_dir, filename)
@@ -77,7 +70,7 @@ class ExcelToPDF(object):
             input_file = os.path.join(temp_dir, filename)
             wb.save(input_file)
 
-            cmd = self.cmd_template + ' "{1}" "{0}"'.format(input_file, temp_dir)
+            cmd = self.cmd_template.format(input_file, temp_dir)
             ExcelToPDF.run(cmd)
 
             if output_file is not None:

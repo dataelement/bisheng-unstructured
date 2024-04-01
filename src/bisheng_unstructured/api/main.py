@@ -71,7 +71,7 @@ async def update_config(inp: ConfigInput):
 
     if inp.rt_ep is not None:
         # update environment
-        os.environ['rt_server'] = inp.rt_ep
+        os.environ["rt_server"] = inp.rt_ep
         pdf_model_params = {}
         for k, v in pdf_model_params_temp.items():
             pdf_model_params[k] = v.format(inp.rt_ep)
@@ -81,7 +81,7 @@ async def update_config(inp: ConfigInput):
         config_dict = inp.dict()
 
     # update persist data
-    with open(config_file, 'wb') as file:
+    with open(config_file, "wb") as file:
         file.write(json.loads(config_dict))
 
     pipeline.update_config(config_dict)
@@ -95,7 +95,6 @@ async def config():
 
 @app.post("/v1/etl4llm/predict", response_model=UnstructuredOutput)
 async def etl4_llm(inp: UnstructuredInput):
-
     filename = inp.filename
     b64_data = inp.b64_data
     file_type = filename.rsplit(".", 1)[1].lower()
@@ -114,8 +113,8 @@ async def etl4_llm(inp: UnstructuredInput):
                 with open(file_path, "wb") as fout:
                     fout.write(base64.b64decode(b64_data[0]))
             except Exception:
-                logger.error(f"b64_data is damaged filename=[{inp.filename}]")
-                return Exception(f"b64_data is damaged")
+                logger.error(f"b64_data is damaged filename=[{inp.filename}]", exc_info=True)
+                raise Exception(f"b64_data is damaged")
         else:
             headers = inp.parameters.get("headers", {})
             ssl_verify = inp.parameters.get("ssl_verify", True)
