@@ -4,6 +4,7 @@ import signal
 import subprocess
 import tempfile
 from html import parser
+from typing import Tuple
 
 import lxml.html
 import numpy as np
@@ -101,23 +102,41 @@ class Text2PDF(object):
         """
 
         cmd_template2 = """
-            soffice --headless --convert-to pdf --outdir \"{1}\" \"{0}\"
+            soffice --headless -env:SingleAppInstance=\"false\" -env:UserInstallation=\"file://{1}\" --convert-to pdf --outdir \"{1}\" \"{0}\"
         """
+
+        cmd_template3 = """
+        wkhtmltopdf --disable-javascript --disable-local-file-access --disable-external-links --no-images "{0}" "{1}"
+        """
+        if os.getenv("WK_LOAD_IMG"):
+            cmd_template3 = cmd_template3.replace("--no-images", "")
 
         def _norm_cmd(cmd):
             return " ".join([p.strip() for p in cmd.strip().split()])
 
         self.cmd_template = _norm_cmd(cmd_template)
         self.cmd_template2 = _norm_cmd(cmd_template2)
+        self.cmd_template3 = _norm_cmd(cmd_template3)
 
     @staticmethod
-    def run(cmd):
+    def run(cmd: str, timeout: int = 30):
         try:
-            p = subprocess.Popen(cmd, shell=True, preexec_fn=os.setsid)
-            p.wait(timeout=10)
+            p = subprocess.Popen(
+                cmd,
+                shell=True,
+                preexec_fn=os.setsid,
+                stderr=subprocess.PIPE,
+                stdout=subprocess.PIPE,
+            )
+            exit_code = p.wait(timeout=timeout)
+            if exit_code != 0:
+                stdout, stderr = p.communicate()
+                raise Exception(
+                    f"err in text2pdf: return code is {exit_code}, stderr: {stderr}, stdout: {stdout}"
+                )
         except subprocess.TimeoutExpired:
             os.killpg(os.getpgid(p.pid), signal.SIGTERM)
-            raise Exception("timeout in transforming text to pdf")
+            raise Exception(f"timeout in transforming text to pdf, cmd: {cmd}")
         except Exception as e:
             raise Exception(f"err in text2pdf: [{e}]")
 
@@ -144,11 +163,21 @@ class Text2PDF(object):
             Text2PDF.run(cmd)
 
         elif type_ext == "html":
-            with tempfile.TemporaryDirectory() as internal_tmp_dir:
-                tmp_input = os.path.join(internal_tmp_dir, filename)
-                clean_html(input_file, tmp_input)
-                cmd = self.cmd_template.format(tmp_input, output_file)
-                Text2PDF.run(cmd)
+            try:
+                with tempfile.TemporaryDirectory() as internal_tmp_dir:
+                    tmp_input = os.path.join(internal_tmp_dir, filename)
+                    clean_html(input_file, tmp_input)
+                    cmd = self.cmd_template.format(tmp_input, output_file)
+                    Text2PDF.run(cmd, timeout=10)
+            except Exception as e:
+                # pandoc失败，尝试用wkhtmltopdf去转换html文件
+                cmd = self.cmd_template3.format(input_file, output_file)
+                try:
+                    Text2PDF.run(cmd, timeout=30)
+                except Exception as e:
+                    # 不存在对应的pdf文件才算真正的失败
+                    if not os.path.exists(output_file):
+                        raise Exception(e)
 
         if to_bytes:
             return open(output_file, "rb").read()

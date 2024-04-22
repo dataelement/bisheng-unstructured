@@ -1,15 +1,11 @@
 FROM dataelement/bisheng-unstructured-runtime:0.0.1
 LABEL org.opencontainers.image.authors="Dataelem inc."
 
-ARG BISHENG_UNS_VER=0.0.2
-
 # unset proxy
 ENV http_proxy=
 ENV https_proxy=
 ENV HTTP_PROXY=
 ENV HTTPS_PROXY=
-
-RUN pip install bisheng-unstructured==${BISHENG_UNS_VER}
 
 # Copy bins and configs
 RUN mkdir -p /opt/bisheng-unstructured/bin
@@ -22,6 +18,18 @@ RUN rm -f /opt/texlive/2023/texmf-dist/scripts/tlcockpit/tlcockpit.jar
 
 WORKDIR /opt/bisheng-unstructured
 
-RUN apt-get clean &&  rm -rf /var/lib/apt/lists/* && rm -rf /root/.cache/pip
+# Copy source code
+COPY ./src/ /opt/bisheng-unstructured/
+COPY ./requirements.txt /opt/bisheng-unstructured/
+COPY ./docker/wkhtmltox_0.12.6-1.focal_amd64.deb /opt/bisheng-unstructured/
+RUN apt update && apt install -y xfonts-utils xfonts-encodings xfonts-base xfonts-75dpi
+RUN dpkg -i wkhtmltox_0.12.6-1.focal_amd64.deb
 
+# install requirements
+RUN python3 -m pip install --upgrade pip
+RUN pip install -r requirements.txt
+
+RUN apt-get clean &&  rm -rf /var/lib/apt/lists/* && rm -rf /root/.cache/pip
+# 禁止写core dump文件
+RUN ulimit -c 0
 CMD ["bash", "bin/entrypoint.sh"]

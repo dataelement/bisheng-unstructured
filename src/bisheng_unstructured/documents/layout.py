@@ -8,6 +8,10 @@ from typing import BinaryIO, Collection, List, Optional, Tuple, Union, cast
 import numpy as np
 from PIL import Image
 
+from bisheng_unstructured.common import get_logger
+
+logger = get_logger("BishengUns", "/app/log/bisheng-uns.log")
+
 
 class DocumentLayout:
     """Class for handling documents that are saved as .pdf files. For .pdf files, a
