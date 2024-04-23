@@ -1,4 +1,5 @@
 import logging
+import sys
 from pathlib import Path
 from typing import Optional
 
@@ -36,13 +37,7 @@ def configure(logger_conf: "LoggerConf"):
     logger.configure(
         handlers=[
             {
-                "sink": RichHandler(
-                    console=Console(width=300),
-                    markup=True,
-                    log_time_format="[%Y-%m-%d %H:%M:%S.%f]",
-                    show_path=False,
-                    show_level=False,
-                ),
+                "sink": sys.stdout,
                 "format": logger_conf.format,
                 "level": log_level.upper(),
             }
