@@ -8,6 +8,7 @@ requests==2.31.0
 urllib3==1.26.16
 beautifulsoup4==4.12.2
 emoji==2.8.0
+pyyaml==6.0.1
 types-pyyaml==6.0.12.8
 loguru==0.7.1
 rich==13.4.2
