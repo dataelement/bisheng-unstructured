@@ -10,10 +10,10 @@ from docx.table import Table as DocxTable
 from docx.table import _Cell, _Row
 from docx.text.paragraph import Paragraph
 from docx.text.run import Run
+from loguru import logger
 from lxml import etree
 
 from bisheng_unstructured.cleaners.core import clean_bullets
-from bisheng_unstructured.common import get_logger
 from bisheng_unstructured.documents.elements import (
     Address,
     Element,
@@ -46,8 +46,6 @@ from bisheng_unstructured.partition.text_type import (
     is_us_city_state_zip,
 )
 from bisheng_unstructured.utils import dependency_exists
-
-logger = get_logger("BishengUns", "/app/log/bisheng-uns.log")
 
 if dependency_exists("pypandoc"):
     import pypandoc

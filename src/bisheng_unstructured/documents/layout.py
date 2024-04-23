@@ -1,16 +1,11 @@
 from __future__ import annotations
 
-import os
-import tempfile
 from pathlib import PurePath
-from typing import BinaryIO, Collection, List, Optional, Tuple, Union, cast
+from typing import Collection, List, Optional, Union
 
 import numpy as np
+from loguru import logger
 from PIL import Image
-
-from bisheng_unstructured.common import get_logger
-
-logger = get_logger("BishengUns", "/app/log/bisheng-uns.log")
 
 
 class DocumentLayout:

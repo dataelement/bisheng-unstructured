@@ -5,7 +5,7 @@ import requests
 
 
 def test1():
-    url = "http://192.168.106.12:10001/v1/etl4llm/predict"
+    url = "http://127.0.0.1:10001/v1/etl4llm/predict"
     filename = "examples/docs/maoxuan_sample1.jpg"
     b64_data = base64.b64encode(open(filename, "rb").read()).decode()
     inp = dict(filename=os.path.basename(filename), b64_data=[b64_data], mode="text")
@@ -14,7 +14,7 @@ def test1():
 
 
 def test2():
-    url = "http://192.168.106.12:10001/v1/etl4llm/predict"
+    url = "http://127.0.0.1:10001/v1/etl4llm/predict"
     filename = "./examples/docs/毛泽东课件.pptx"
     b64_data = base64.b64encode(open(filename, "rb").read()).decode()
     inp = dict(filename=os.path.basename(filename), b64_data=[b64_data], mode="text")
@@ -23,7 +23,7 @@ def test2():
 
 
 def test3():
-    url = "http://192.168.106.12:10001/v1/etl4llm/predict"
+    url = "http://127.0.0.1:10001/v1/etl4llm/predict"
     filename = "./examples/docs/毛泽东课件.pptx"
     b64_data = base64.b64encode(open(filename, "rb").read()).decode()
     inp = dict(filename=os.path.basename(filename), b64_data=[b64_data], mode="partition")
@@ -32,7 +32,7 @@ def test3():
 
 
 def test4():
-    url = "http://192.168.106.12:10001/v1/etl4llm/predict"
+    url = "http://127.0.0.1:10001/v1/etl4llm/predict"
     filename = "./examples/docs/毛泽东课件.pptx"
     b64_data = base64.b64encode(open(filename, "rb").read()).decode()
     inp = dict(filename=os.path.basename(filename), b64_data=[b64_data], mode="vis")
@@ -41,7 +41,7 @@ def test4():
 
 
 def test5():
-    url = "http://192.168.106.12:10001/v1/etl4llm/predict"
+    url = "http://127.0.0.1:10001/v1/etl4llm/predict"
     filename = "./examples/docs/达梦数据库招股说明书.pdf"
     b64_data = base64.b64encode(open(filename, "rb").read()).decode()
     inp = dict(
@@ -55,7 +55,7 @@ def test5():
 
 
 def test6():
-    url = "http://192.168.106.12:10002/v1/etl4llm/predict"
+    url = "http://127.0.0.1:10002/v1/etl4llm/predict"
     filename = "./examples/docs/maoxuan_sample1.jpg"
     output = "./temp/maoxuan_sample1_v1.pdf"
     b64_data = base64.b64encode(open(filename, "rb").read()).decode()
@@ -66,9 +66,9 @@ def test6():
         fout.write(base64.b64decode(b64_data))
 
 
-# test1()
+test1()
 # test2()
 # test3()
 # test4()
-test5()
+# test5()
 # test6()

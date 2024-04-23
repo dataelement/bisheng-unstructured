@@ -1,7 +1,8 @@
 from tempfile import SpooledTemporaryFile
 from typing import BinaryIO, Dict, List, Optional, Union
 
-from bisheng_unstructured.logger import logger
+from loguru import logger
+
 from bisheng_unstructured.utils import dependency_exists
 
 VALID_STRATEGIES: Dict[str, List[str]] = {
@@ -127,7 +128,7 @@ def _determine_pdf_auto_strategy(
 ):
     """If "auto" is passed in as the strategy, determines what strategy to use
     for PDFs."""
-    # NOTE(robinson) - Currrently "hi_res" is the only stategy where
+    # NOTE(robinson) - Currently "hi_res" is the only strategy where
     # infer_table_structure is used.
     if infer_table_structure:
         return "hi_res"

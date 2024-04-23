@@ -8,9 +8,9 @@ if sys.version_info < (3, 8):
     from typing_extensions import Final  # pragma: nocover
 else:
     from typing import Final
+from loguru import logger as trace_logger
 
 from bisheng_unstructured.cleaners.core import remove_punctuation
-from bisheng_unstructured.logger import trace_logger
 from bisheng_unstructured.nlp.english_words import ENGLISH_WORDS
 from bisheng_unstructured.nlp.patterns import (
     EMAIL_ADDRESS_PATTERN_RE,
@@ -60,11 +60,11 @@ def is_possible_narrative_text(
         language_checks = _language_checks.lower() == "true"
 
     if len(text) == 0:
-        trace_logger.detail("Not narrative. Text is empty.")  # type: ignore
+        trace_logger.debug("Not narrative. Text is empty.")  # type: ignore
         return False
 
     if text.isnumeric():
-        trace_logger.detail(f"Not narrative. Text is all numeric:\n\n{text}")  # type: ignore
+        trace_logger.debug(f"Not narrative. Text is all numeric:\n\n{text}")  # type: ignore
         return False
 
     language = os.environ.get("UNSTRUCTURED_LANGUAGE", language)
@@ -77,7 +77,7 @@ def is_possible_narrative_text(
         os.environ.get("UNSTRUCTURED_NARRATIVE_TEXT_CAP_THRESHOLD", cap_threshold),
     )
     if exceeds_cap_ratio(text, threshold=cap_threshold):
-        trace_logger.detail(f"Not narrative. Text exceeds cap ratio {cap_threshold}:\n\n{text}")  # type: ignore # noqa: E501
+        trace_logger.debug(f"Not narrative. Text exceeds cap ratio {cap_threshold}:\n\n{text}")  # type: ignore # noqa: E501
         return False
 
     non_alpha_threshold = float(
@@ -87,7 +87,7 @@ def is_possible_narrative_text(
         return False
 
     if (sentence_count(text, 3) < 2) and (not contains_verb(text)) and language == "en":
-        trace_logger.detail(f"Not narrative. Text does not contain a verb:\n\n{text}")  # type: ignore # noqa: E501
+        trace_logger.debug(f"Not narrative. Text does not contain a verb:\n\n{text}")  # type: ignore # noqa: E501
         return False
 
     return True
@@ -125,7 +125,7 @@ def is_possible_title(
         language_checks = _language_checks.lower() == "true"
 
     if len(text) == 0:
-        trace_logger.detail("Not a title. Text is empty.")  # type: ignore
+        trace_logger.debug("Not a title. Text is empty.")  # type: ignore
         return False
 
     if language == "zh":
@@ -168,14 +168,14 @@ def is_possible_title(
         return False
 
     if text.isnumeric():
-        trace_logger.detail(f"Not a title. Text is all numeric:\n\n{text}")  # type: ignore
+        trace_logger.debug(f"Not a title. Text is all numeric:\n\n{text}")  # type: ignore
         return False
 
     # NOTE(robinson) - The min length is to capture content such as "ITEM 1A. RISK FACTORS"
     # that sometimes get tokenized as separate sentences due to the period, but are still
     # valid titles
     if sentence_count(text, min_length=sentence_min_length) > 1:
-        trace_logger.detail(  # type: ignore
+        trace_logger.debug(  # type: ignore
             f"Not a title. Text is longer than {sentence_min_length} sentences:\n\n{text}",
         )
         return False
@@ -243,7 +243,7 @@ def sentence_count(text: str, min_length: Optional[int] = None) -> int:
         sentence = remove_punctuation(sentence)
         words = [word for word in word_tokenize(sentence) if word != "."]
         if min_length and len(words) < min_length:
-            trace_logger.detail(  # type: ignore
+            trace_logger.debug(  # type: ignore
                 f"Skipping sentence because does not exceed {min_length} word tokens\n"
                 f"{sentence}",
             )

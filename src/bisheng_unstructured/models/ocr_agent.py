@@ -1,14 +1,16 @@
 import base64
 import copy
 import io
+import os
 from functools import cmp_to_key
 from typing import Any, Dict, List, Union
 
 import cv2
-import os
 import numpy as np
 import requests
 from PIL import Image
+
+from bisheng_unstructured.config.settings import settings
 
 from .common import (
     bbox_overlap,
@@ -17,40 +19,40 @@ from .common import (
     is_valid_box,
     join_line_outs,
     list2box,
+    load_json,
     pil2opencv,
     save_pillow_to_base64,
     sort_boxes,
     split_line_image,
-    load_json
 )
 
 DEFAULT_CONFIG = {
     "params": {
-            "sort_filter_boxes": True,
-            "enable_huarong_box_adjust": True,
-            "rotateupright": False,
-            "support_long_image_segment": True,
-            "split_long_sentence_blank": True,
-        },
+        "sort_filter_boxes": True,
+        "enable_huarong_box_adjust": True,
+        "rotateupright": False,
+        "support_long_image_segment": True,
+        "split_long_sentence_blank": True,
+    },
     "scene_mapping": {
-            "print": {
-                "det": "general_text_det_mrcnn_v2.0",
-                "recog": "transformer-blank-v0.2-faster",
-            },
-            "hand": {
-                "det": "general_text_det_mrcnn_v2.0",
-                "recog": "transformer-hand-v1.16-faster",
-            },
-            "print_recog": {
-                "recog": "transformer-blank-v0.2-faster",
-            },
-            "hand_recog": {
-                "recog": "transformer-hand-v1.16-faster",
-            },
-            "det": {
-                "det": "general_text_det_mrcnn_v2.0",
-            },
-        }
+        "print": {
+            "det": "general_text_det_mrcnn_v2.0",
+            "recog": "transformer-blank-v0.2-faster",
+        },
+        "hand": {
+            "det": "general_text_det_mrcnn_v2.0",
+            "recog": "transformer-hand-v1.16-faster",
+        },
+        "print_recog": {
+            "recog": "transformer-blank-v0.2-faster",
+        },
+        "hand_recog": {
+            "recog": "transformer-hand-v1.16-faster",
+        },
+        "det": {
+            "det": "general_text_det_mrcnn_v2.0",
+        },
+    },
 }
 
 
@@ -61,13 +63,8 @@ class OCRAgent(object):
         self.ep = kwargs.get("ocr_model_ep")
         self.client = requests.Session()
         self.timeout = kwargs.get("timeout", 60)
-        mdoel_config_path = "/opt/bisheng-unstructured/model_config.json"
-        if os.path.exists(mdoel_config_path):
-            jsoncontent = load_json(mdoel_config_path)
-        else:
-            jsoncontent = None
-        if jsoncontent is not None and "params" in jsoncontent and \
-            "scene_mapping" in jsoncontent:
+        jsoncontent = settings.dict()
+        if jsoncontent is not None and "params" in jsoncontent and "scene_mapping" in jsoncontent:
             self.params = jsoncontent["params"]
             self.scene_mapping = jsoncontent["scene_mapping"]
         else:

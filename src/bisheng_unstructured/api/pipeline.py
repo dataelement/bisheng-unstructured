@@ -1,7 +1,9 @@
 import json
 import os
+from typing import Dict
 
-from bisheng_unstructured.common import get_logger
+from loguru import logger
+
 from bisheng_unstructured.documents.html_utils import save_to_txt, visualize_html
 from bisheng_unstructured.documents.pdf_parser.image import ImageDocument
 from bisheng_unstructured.documents.pdf_parser.pdf import PDFDocument
@@ -19,8 +21,6 @@ from bisheng_unstructured.staging.base import convert_to_isd
 
 from .any2pdf import Any2PdfCreator
 from .types import UnstructuredInput, UnstructuredOutput
-
-logger = get_logger("BishengUns", "/app/log/bisheng-uns.log")
 
 
 def partition_pdf(filename, model_params, **kwargs):
@@ -57,9 +57,9 @@ PARTITION_MAP = {
 
 
 class Pipeline(object):
-    def __init__(self, config_file: str):
+    def __init__(self, settings: Dict):
         """k8s 使用cm 创建环境变量"""
-        tmp_dict = json.load(open(config_file))
+        tmp_dict = settings
         rt_ep = os.getenv("rt_server")
         if rt_ep:
             pdf_model_params_temp = {

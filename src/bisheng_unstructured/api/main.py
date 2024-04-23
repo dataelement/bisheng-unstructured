@@ -7,13 +7,15 @@ import requests
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import ORJSONResponse
+from loguru import logger
 
-from bisheng_unstructured.common import Timer, get_logger
+from bisheng_unstructured.common import Timer
+from bisheng_unstructured.config.settings import settings
 
+from ..common.logger import configure
+from ..middlewares.http_middleware import CustomMiddleware
 from .pipeline import Pipeline
 from .types import ConfigInput, UnstructuredInput, UnstructuredOutput
-
-logger = get_logger("BishengUns", "/app/log/bisheng-uns.log")
 
 # Fastapi App
 
@@ -49,14 +51,15 @@ def create_app():
         allow_methods=["*"],
         allow_headers=["*"],
     )
-
+    app.add_middleware(CustomMiddleware)
     return app
 
 
+# 初始化logger配置
+configure(settings.logger_conf)
 app = create_app()
 
-config_file = "./config/config.json"
-pipeline = Pipeline(config_file)
+pipeline = Pipeline(settings.dict())
 
 
 @app.post("/v1/config/update")
@@ -79,10 +82,6 @@ async def update_config(inp: ConfigInput):
         config_dict = {"pdf_model_params": pdf_model_params}
     else:
         config_dict = inp.dict()
-
-    # update persist data
-    with open(config_file, "wb") as file:
-        file.write(json.loads(config_dict))
 
     pipeline.update_config(config_dict)
     return {"status": "OK"}
