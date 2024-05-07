@@ -88,7 +88,7 @@ class Pipeline(object):
             result = UnstructuredOutput(b64_pdf=output)
             return result
         except Exception as e:
-            logger.error(f"error in topdf filename=[{inp.filename}] err=[{e}]", exc_info=True)
+            logger.exception(f"error in topdf filename=[{inp.filename}] err=")
             return UnstructuredOutput(status_code=400, status_message=str(e))
 
     def predict(self, inp: UnstructuredInput) -> UnstructuredOutput:
@@ -121,5 +121,5 @@ class Pipeline(object):
 
             return result
         except Exception as e:
-            logger.error(f"error in partition filename=[{inp.filename}] err=[{e}]")
+            logger.exception(f"error in partition filename=[{inp.filename}] err=")
             return UnstructuredOutput(status_code=400, status_message=str(e))
