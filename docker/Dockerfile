@@ -40,10 +40,6 @@ RUN dpkg -i wkhtmltox_0.12.6-1.focal_amd64.deb
 RUN python3 -m pip install --upgrade pip
 RUN pip install -r requirements.txt
 
-# install requirements
-RUN poetry config virtualenvs.create false
-RUN poetry install --no-interaction --no-ansi --without dev
-
 RUN apt-get clean &&  rm -rf /var/lib/apt/lists/* && rm -rf /root/.cache/pip
 
 CMD ["bash", "bin/entrypoint.sh"]
