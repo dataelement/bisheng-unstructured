@@ -24,6 +24,8 @@ class ImageDocument(PDFDocument):
         n_parallel: int = 10,
         **kwargs
     ) -> None:
+        super(ImageDocument, self).__init__(file=file, model_params=model_params)
+
         self.layout_agent = LayoutAgent(**model_params)
         self.table_agent = TableAgent(**model_params)
         self.ocr_agent = OCRAgent(**model_params)
@@ -41,8 +43,6 @@ class ImageDocument(PDFDocument):
         self.is_join_table = False
         self.keep_text_in_image = keep_text_in_image
         self.n_parallel = n_parallel
-
-        super(PDFDocument, self).__init__()
 
     def load(self) -> List[Page]:
         """Load given path as pages."""
