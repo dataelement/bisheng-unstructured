@@ -2,6 +2,7 @@ import io
 from typing import IO, Callable, Dict, List, Optional, Tuple
 
 import requests
+from loguru import logger
 
 from bisheng_unstructured.documents.elements import DataSourceMetadata
 from bisheng_unstructured.file_utils.filetype import (
@@ -11,7 +12,6 @@ from bisheng_unstructured.file_utils.filetype import (
     detect_filetype,
     is_json_processable,
 )
-from bisheng_unstructured.logger import logger
 from bisheng_unstructured.partition.common import exactly_one
 from bisheng_unstructured.partition.email import partition_email
 from bisheng_unstructured.partition.html import partition_html
@@ -124,7 +124,7 @@ def partition(
         in the HTTP request.
     ocr_languages
         The languages to use for the Tesseract agent. To use a language, you'll first need
-        to isntall the appropriate Tesseract language pack.
+        to install the appropriate Tesseract language pack.
     pdf_infer_table_structure
         If True and strategy=hi_res, any Table Elements extracted from a PDF will include an
         additional metadata field, "text_as_html," where the value (string) is a just a

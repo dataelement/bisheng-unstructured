@@ -20,6 +20,7 @@ if sys.version_info < (3, 8):
     from typing_extensions import Final
 else:
     from typing import Final
+from loguru import logger
 
 from bisheng_unstructured.cleaners.core import clean_extra_whitespace, replace_mime_encodings
 from bisheng_unstructured.cleaners.extract import (
@@ -46,7 +47,6 @@ from bisheng_unstructured.documents.email_elements import (
     Subject,
 )
 from bisheng_unstructured.file_utils.filetype import FileType, add_metadata_with_filetype
-from bisheng_unstructured.logger import logger
 from bisheng_unstructured.nlp.patterns import EMAIL_DATETIMETZ_PATTERN_RE
 from bisheng_unstructured.partition.html import partition_html
 from bisheng_unstructured.partition.text import partition_text

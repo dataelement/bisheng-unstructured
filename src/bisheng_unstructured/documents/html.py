@@ -25,7 +25,6 @@ from bisheng_unstructured.documents.elements import (
     Title,
 )
 from bisheng_unstructured.documents.xml import VALID_PARSERS, XMLDocument
-from bisheng_unstructured.logger import logger
 from bisheng_unstructured.partition.text_type import (
     is_bulleted_text,
     is_email_address,
@@ -47,6 +46,7 @@ import re
 RE_MULTISPACE_INCLUDING_NEWLINES = re.compile(pattern=r"\s+", flags=re.DOTALL)
 
 import lxml
+from loguru import logger
 from lxml import etree
 from lxml.html.clean import Cleaner
 

@@ -13,6 +13,7 @@ from typing import Any, List, Optional, Union
 import fitz as pymupdf
 import numpy as np
 import pypdfium2
+from loguru import logger
 from PIL import Image, ImageOps
 from shapely import Polygon
 from shapely import box as Rect
@@ -1161,7 +1162,7 @@ class PDFDocument(Document):
                 bytes_imgs.append(bytes_img)
 
             timer.toc()
-            print("pdfium render image", timer.get())
+            logger.info("pdfium render image", timer.get())
 
             results = []
             with ThreadPoolExecutor(max_workers=self.n_parallel) as executor:

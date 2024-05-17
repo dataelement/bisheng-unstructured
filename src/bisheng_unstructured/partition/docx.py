@@ -1,4 +1,5 @@
 import os
+import re
 import tempfile
 from tempfile import SpooledTemporaryFile
 from typing import IO, BinaryIO, List, Optional, Tuple, Union, cast
@@ -9,6 +10,7 @@ from docx.table import Table as DocxTable
 from docx.table import _Cell, _Row
 from docx.text.paragraph import Paragraph
 from docx.text.run import Run
+from loguru import logger
 from lxml import etree
 
 from bisheng_unstructured.cleaners.core import clean_bullets
@@ -253,7 +255,7 @@ def _paragraph_to_element(
     if len(text.strip()) == 0:
         return None
 
-    if "Heading" in paragraph.style.name:
+    if paragraph.style and "Heading" in paragraph.style.name:
         element = Title(text)
         try:
             element.metadata.extra_data = {"title_level": int(paragraph.style.name[-1])}

@@ -9,6 +9,7 @@ from typing import IO, TYPE_CHECKING, Any, BinaryIO, Dict, List, Optional, Tuple
 
 import emoji
 from docx.table import _Cell, _Row
+from loguru import logger
 from tabulate import tabulate
 
 from bisheng_unstructured.documents.coordinates import CoordinateSystem
@@ -22,7 +23,6 @@ from bisheng_unstructured.documents.elements import (
     PageBreak,
     Text,
 )
-from bisheng_unstructured.logger import logger
 from bisheng_unstructured.nlp.patterns import ENUMERATED_BULLETS_RE, UNICODE_BULLETS_RE
 from bisheng_unstructured.utils import dependency_exists
 

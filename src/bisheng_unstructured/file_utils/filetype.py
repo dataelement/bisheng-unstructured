@@ -9,6 +9,8 @@ from enum import Enum
 from functools import wraps
 from typing import IO, Callable, List, Optional
 
+from loguru import logger
+
 from bisheng_unstructured.documents.coordinates import PixelSpace
 from bisheng_unstructured.documents.elements import Element, PageBreak
 from bisheng_unstructured.documents.layout import DocumentLayout, PageLayout
@@ -28,7 +30,6 @@ try:
 except ImportError:  # pragma: nocover
     LIBMAGIC_AVAILABLE = False  # pragma: nocover
 
-from bisheng_unstructured.logger import logger
 from bisheng_unstructured.nlp.patterns import EMAIL_HEAD_RE
 
 TXT_MIME_TYPES = [
