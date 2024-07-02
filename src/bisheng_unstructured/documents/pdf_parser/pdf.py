@@ -267,6 +267,7 @@ class PDFDocument(Document):
         support_formula: bool = False,
         enable_isolated_formula: bool = False,
         n_parallel: int = 10,
+        scale: float = 1,
         **kwargs,
     ) -> None:
         """Initialize with a file path."""
@@ -289,6 +290,7 @@ class PDFDocument(Document):
         self.support_formula = support_formula
         self.enable_isolated_formula = enable_isolated_formula
         self.n_parallel = n_parallel
+        self.scale = scale
         super().__init__()
 
     def _get_image_blobs(self, fitz_doc, pdf_reader, n=None, start=0):
@@ -307,7 +309,7 @@ class PDFDocument(Document):
             except Exception:
                 # some pdf input cannot get render image from fitz
                 page = pdf_reader.get_page(pg)
-                pil_image = page.render().to_pil()
+                pil_image = page.render(scale=self.scale).to_pil()
                 img_byte_arr = io.BytesIO()
                 pil_image.save(img_byte_arr, format="PNG")
                 bytes_img = img_byte_arr.getvalue()
@@ -1042,7 +1044,14 @@ class PDFDocument(Document):
             b0, b0_label, r0, r0_w, r0_h = _get_elem(groups[i], False)
 
         return groups
-
+    def _divide_by_scale(self,input_list,scale):
+        result = []
+        for item in input_list:
+            if isinstance(item, list):
+                result.append(self._divide_by_scale(item,scale))
+            else:
+                result.append(item / scale)
+        return result
     def _save_to_pages(self, groups, page_inds, lang):
         TITLE_ID = 3
         TEXT_ID = 4
@@ -1058,7 +1067,7 @@ class PDFDocument(Document):
                 text = b.block_text
 
                 element = None
-                extra_data = {"bboxes": [bbox]}
+                extra_data = {"bboxes": self._divide_by_scale(bbox,self.scale)}
 
                 if label == TABLE_ID:
                     # html = b[-1]
@@ -1078,7 +1087,7 @@ class PDFDocument(Document):
                     # lines = b[-1]
                     lines = b.ts
                     line_cnt = len(lines)
-                    extra_data.update({"bboxes": line_bboxes})
+                    extra_data.update({"bboxes": self._divide_by_scale(line_bboxes,self.scale)})
                     if True or lang == "zh":  # for join test only
                         extra_data.update({"pages": [idx] * line_cnt})
                         line_chars_cnt = [len(line) for line in lines]
@@ -1154,7 +1163,7 @@ class PDFDocument(Document):
             page_imgs = []
             for idx in range(start, start + n):
                 page = pdf_doc.get_page(idx)
-                pil_image = page.render().to_pil()
+                pil_image = page.render(scale=self.scale).to_pil()
                 page_imgs.append(pil_image)
                 img_byte_arr = io.BytesIO()
                 pil_image.save(img_byte_arr, format="PNG")

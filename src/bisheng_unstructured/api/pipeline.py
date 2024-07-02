@@ -23,8 +23,8 @@ from .any2pdf import Any2PdfCreator
 from .types import UnstructuredInput, UnstructuredOutput
 
 
-def partition_pdf(filename, model_params, **kwargs):
-    doc = PDFDocument(file=filename, model_params=model_params, **kwargs)
+def partition_pdf(filename, model_params,scale, **kwargs):
+    doc = PDFDocument(file=filename, model_params=model_params,scale=scale, **kwargs)
     _ = doc.pages
     return doc.elements
 
@@ -105,7 +105,7 @@ class Pipeline(object):
         part_inp = {"filename": filename, **inp.parameters}
         part_func = PARTITION_MAP.get(file_type)
         if part_func == partition_pdf or part_func == partition_image:
-            part_inp.update({"model_params": self.pdf_model_params})
+            part_inp.update({"model_params": self.pdf_model_params,"scale":inp.scale})
         try:
             elements = part_func(**part_inp)
             mode = inp.mode
