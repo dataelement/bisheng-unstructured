@@ -1067,7 +1067,7 @@ class PDFDocument(Document):
                 text = b.block_text
 
                 element = None
-                extra_data = {"bboxes": self._divide_by_scale(bbox,self.scale)}
+                extra_data = {"bboxes": [self._divide_by_scale(bbox,self.scale)]}
 
                 if label == TABLE_ID:
                     # html = b[-1]
