@@ -3,7 +3,7 @@ import hashlib
 from bisheng_unstructured.documents.html_utils import save_to_txt, visualize_html
 from bisheng_unstructured.documents.pdf_parser.image import ImageDocument
 
-TEST_RT_URL = "http://192.168.106.12:9001/v2.1/models/"
+TEST_RT_URL = f"http://10.60.38.67:3011/v2.1/models/"
 
 
 def test_image():
@@ -45,7 +45,7 @@ def test_image2():
         "ocr_model_ep": f"{TEST_RT_URL}elem_ocr_collection_v3/infer",
     }
 
-    filename = "examples/docs/maoxuan_sample1.jpg"
+    filename = "src/bisheng-unstructured/examples/docs/maoxuan_sample1.jpg"
     doc = ImageDocument(file=filename, model_params=model_params)
     pages = doc.pages
     elements = doc.elements
@@ -91,7 +91,7 @@ def test_regress():
         assert s1 == s2
 
 
-test_image3()
+# test_image3()
 # test_image2()
-# test_image()
-test_regress()
+test_image()
+# test_regress()
