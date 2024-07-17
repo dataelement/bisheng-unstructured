@@ -48,7 +48,7 @@ steps:
       insecure: true
       repo: 192.168.106.8:6082/dataelement/studio
       tags: ${DRONE_TAG}
-      context: /drone/src
+      context: ./
       dockerfile: ./Dockerfile
       username:
         from_secret: NEXUS_USER
