@@ -5,7 +5,6 @@ on:
     # Sequence of patterns matched against refs/tags
     branches:
       - "r*"
-      - "f*"
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}

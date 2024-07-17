@@ -1,0 +1,175 @@
+kind: pipeline
+name: bisheng-unstructured
+type: docker
+
+steps:
+  - name: build_docker
+    pull: if-not-exists
+    image: plugins/docker
+    privileged: true
+    environment:
+      http_proxy:
+        from_secret: PROXY
+      https_proxy:
+        from_secret: PROXY
+      no_proxy: 192.168.106.8
+    settings:
+      no-cache: false
+      registry: http://192.168.106.8:6082
+      insecure: true
+      repo: 192.168.106.8:6082/dataelement/bisheng-unstructured
+      tags: [ release ]
+      context: ./
+      dockerfile: docker/Dockerfile
+      username:
+        from_secret: NEXUS_USER
+      password:
+        from_secret: NEXUS_PASSWORD
+    when: # 无论成功失败 都运行
+      status:
+        - success
+      branch: # git 分支
+        - feat/*
+      event: # 事  件
+        - push
+
+  - name: build_docker_tags
+    pull: if-not-exists
+    image: plugins/docker
+    privileged: true
+    environment:
+      http_proxy:
+        from_secret: PROXY
+      https_proxy:
+        from_secret: PROXY
+      no_proxy: 192.168.106.8
+    settings:
+      registry: http://192.168.106.8:6082
+      insecure: true
+      repo: 192.168.106.8:6082/dataelement/studio
+      tags: ${DRONE_TAG}
+      context: /drone/src
+      dockerfile: ./Dockerfile
+      username:
+        from_secret: NEXUS_USER
+      password:
+        from_secret: NEXUS_PASSWORD
+    when: # 无论成功失败 都运行
+      status:
+        - success
+      ref: # git 分支
+        - refs/tags/*
+      event: # 事  件
+        - tag
+
+  # - name: publish_nexus
+  #   pull: if-not-exists
+  #   image: docker:24.0.6
+  #   environment:
+  #     version: release
+  #     USERNAME:
+  #       from_secret: upload_name
+  #     docker_username:
+  #       from_secret: docker_username
+  #     docker_password:
+  #       from_secret: docker_password
+  #   commands:
+  #     - apk add --no-cache curl
+  #     - apk add --no-cache tar
+  #     - apk add --no-cache wget
+  #     - docker login -u $docker_username -p $docker_password 192.168.106.8:6082
+  #     - docker pull 192.168.106.8:6082/dataelement/studio:$version
+  #     - docker image tag 192.168.106.8:6082/dataelement/studio:$version studio:$version
+  #     - docker save -o studio-$version.tar studio:$version
+  #     - docker rmi studio:$version -f
+  #     - mkdir -p deployment/docker-images
+  #     - mv studio-$version.tar deployment/docker-images
+  #     - wget http://public:5Bn4zc9wCvLoBXgN@192.168.106.244:5081/repository/raw-hosted/product/ocr-studio/2.x/studio-fe-$version.tar.gz
+  #     - tar xzf studio-fe-$version.tar.gz
+  #     - mkdir -p deployment/nginx/html/
+  #     - cp -r dist/ deployment/nginx/html/studio2
+  #     - mv deployment Dataelem_Studio_$version
+  #     - tar czf Dataelem_Studio_$version.tar.gz Dataelem_Studio_$version
+  #     - curl -k --progress-bar -o /dev/null --user $USERNAME --upload-file Dataelem_Studio_$version.tar.gz http://192.168.106.244:5081/repository/raw-hosted/product/ocr-studio/2.x/Dataelem_Studio_$version.tar.gz
+  #   volumes:
+  #     - name: dockersock
+  #       path: /var/run
+  #   when: # 无论成功失败 都运行
+  #     status:
+  #       - success
+  #     branch: # git 分支
+  #       - feat/*
+  #     event: # 事  件
+  #       - push
+
+  # - name: publish_nexus_tags
+  #   pull: if-not-exists
+  #   image: docker:24.0.6
+  #   environment:
+  #     version: ${DRONE_TAG}
+  #     USERNAME:
+  #       from_secret: upload_name
+  #     docker_username:
+  #       from_secret: docker_username
+  #     docker_password:
+  #       from_secret: docker_password
+  #   commands:
+  #     - apk add --no-cache curl tar wget
+  #     - docker login -u $docker_username -p $docker_password 192.168.106.8:6082
+  #     - docker pull 192.168.106.8:6082/dataelement/studio:$version
+  #     - docker image tag 192.168.106.8:6082/dataelement/studio:$version studio:$version
+  #     - docker save -o studio-$version.tar studio:$version
+  #     - docker rmi studio:$version -f
+  #     - mkdir -p deployment/docker-images
+  #     - mv studio-$version.tar deployment/docker-images
+  #     - wget http://public:5Bn4zc9wCvLoBXgN@192.168.106.244:5081/repository/raw-hosted/product/ocr-studio/2.x/studio-fe-$version.tar.gz
+  #     - tar xzf studio-fe-$version.tar.gz
+  #     - mkdir -p deployment/nginx/html/
+  #     - cp -r dist/ deployment/nginx/html/studio2
+  #     - mv deployment Dataelem_Studio_$version
+  #     - tar czf Dataelem_Studio_$version.tar.gz Dataelem_Studio_$version
+  #     - curl -k --progress-bar -o /dev/null --user $USERNAME --upload-file Dataelem_Studio_$version.tar.gz http://192.168.106.244:5081/repository/raw-hosted/product/ocr-studio/2.x/Dataelem_Studio_$version.tar.gz
+  #   volumes:
+  #     - name: dockersock
+  #       path: /var/run
+  #   when: # 无论成功失败 都运行
+  #     status:
+  #       - success
+  #     ref: # git 分支
+  #       - refs/tags/*
+  #     event: # 事  件
+  #       - tag
+
+  # - name: notify-start # notify
+  #   pull: if-not-exists
+  #   image: plugins/webhook
+  #   settings:
+  #     debug: true
+  #     urls: https://open.feishu.cn/open-apis/bot/v2/hook/2cfe0d8d-647c-4408-9f39-c59134035c4b
+  #     content_type: application/json
+  #     template: |
+  #       {
+  #         "msg_type": "interactive",
+  #         "card": {
+  #           "type": "template",
+  #           "data": {
+  #             "template_id": "AAqkI9bnY5FUs",
+  #             "template_variable": {
+  #               "repo_name": "{{ repo.name }}",
+  #               "build_branch": "{{build.branch}}",
+  #               "build_author": "{{ DRONE_COMMIT_AUTHOR }}",
+  #               "link": "{{build.link}}",
+  #               "commit_msg": "{{ trim build.message }}",
+  #               "build_tag":"{{build.tag}}",
+  #               "build_start":"{{build.started}}"
+  #             }
+  #           }
+  #         }
+  #       }
+  #   when: # 无论成功失败都运行
+  #     status:
+  #       - success
+  #     branch: # git 分支
+  #       - feat/*
+  #     event: # 事  件
+  #       - push
