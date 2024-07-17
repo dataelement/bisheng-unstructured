@@ -57,6 +57,7 @@ PARTITION_MAP = {
 
 
 class Pipeline(object):
+
     def __init__(self, settings: Dict):
         """k8s 使用cm 创建环境变量"""
         tmp_dict = settings
@@ -69,8 +70,10 @@ class Pipeline(object):
                 "table_model_ep": f"http://{rt_ep}/v2.1/models/elem_table_detect_v1/infer",
                 "ocr_model_ep": f"http://{rt_ep}/v2.1/models/elem_ocr_collection_v3/infer",
             }
+            self.mode = "sdk"
             self.config = {"pdf_model_params": pdf_model_params_temp}
         else:
+            self.mode = "local"
             self.config = tmp_dict
         self.pdf_model_params = self.config.get("pdf_model_params")
         topdf_model_params = self.config.get("topdf_model_params", {})
@@ -79,6 +82,8 @@ class Pipeline(object):
     def update_config(self, config_dict):
         self.config = config_dict
         self.pdf_model_params = self.config.get("pdf_model_params")
+        if self.pdf_model_params:
+            self.mode = "sdk"
         topdf_model_params = self.config.get("topdf_model_params", {})
         self.pdf_creator = Any2PdfCreator(topdf_model_params)
 
@@ -92,8 +97,6 @@ class Pipeline(object):
             return UnstructuredOutput(status_code=400, status_message=str(e))
 
     def predict(self, inp: UnstructuredInput) -> UnstructuredOutput:
-        if inp.mode == "topdf":
-            return self.to_pdf(inp)
 
         if inp.file_type not in PARTITION_MAP:
             raise Exception(f"file type[{inp.file_type}] not supported")
@@ -102,8 +105,13 @@ class Pipeline(object):
         file_type = inp.file_type
 
         # part_params = inp.parameters
+        if inp.mode == "topdf":
+            return self.to_pdf(inp)
         part_inp = {"filename": filename, **inp.parameters}
         part_func = PARTITION_MAP.get(file_type)
+        if part_func == partition_image and self.mode == 'local':
+            raise Exception("本地模式不支持图片格式")
+
         if part_func == partition_pdf or part_func == partition_image:
             part_inp.update({"model_params": self.pdf_model_params})
         try:

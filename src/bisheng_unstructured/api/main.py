@@ -1,5 +1,4 @@
 import base64
-import json
 import os
 import tempfile
 
@@ -12,10 +11,10 @@ from loguru import logger
 from bisheng_unstructured.common import Timer
 from bisheng_unstructured.config.settings import settings
 
-from ..common.logger import configure
-from ..middlewares.http_middleware import CustomMiddleware
-from .pipeline import Pipeline
-from .types import ConfigInput, UnstructuredInput, UnstructuredOutput
+from src.bisheng_unstructured.common.logger import configure
+from src.bisheng_unstructured.middlewares.http_middleware import CustomMiddleware
+from src.bisheng_unstructured.api.pipeline import Pipeline
+from src.bisheng_unstructured.api.types import ConfigInput, UnstructuredInput, UnstructuredOutput
 
 # Fastapi App
 
@@ -127,8 +126,26 @@ async def etl4_llm(inp: UnstructuredInput):
         inp.file_path = file_path
         inp.file_type = file_type
 
+        if pipeline.mode == "local":
+            # 本地模式只支持text 有限格式
+            logger.info(f"local_pipeline mode=[{inp.mode}] filename=[{inp.filename}]")
+            inp.mode = "text"
+
+        if inp.file_type != "pdf" and inp.mode == "partition":
+            # partition 模式，转pdf 后处理
+            inp.mode = "topdf"
+            b64_pdf = pipeline.predict(inp)
+            with open(file_path, "wb") as fout:
+                fout.write(base64.b64decode(b64_pdf))
+            inp.file_type = "pdf"
+            inp.mode = "partition"
+
         timer.toc()
         outp = pipeline.predict(inp)
+        if inp.mode == "partition":
+            with open(file_path, "rb") as fin:
+                outp.b64_pdf = base64.b64encode(fin.read()).decode("utf-8")
+
         timer.toc()
         logger.info(f"succ etl4llm with filename=[{inp.filename}] elapses=[{timer.get()}]]")
         return outp
