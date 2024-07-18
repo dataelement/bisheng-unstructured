@@ -76,4 +76,4 @@ fastapi
 orjson
 
 # unstructured
-unstructured==0.14.10
+unstructured
