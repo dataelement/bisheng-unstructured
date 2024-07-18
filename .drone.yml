@@ -1,8 +1,23 @@
 kind: pipeline
-name: bisheng-unstructured
+name: cicd
 type: docker
 
+clone:
+  disable: true
+
 steps:
+` - name: clone
+    image: alpine/git
+    pull: if-not-exists
+    environment:
+      http_proxy: 
+        from_secret: PROXY
+      https_proxy:
+        from_secret: PROXY
+    commands:
+    - git clone https://github.com/dataelement/bisheng-unstructured.git .
+    - git checkout $DRONE_COMMIT
+
   - name: build_docker
     pull: if-not-exists
     image: plugins/docker
