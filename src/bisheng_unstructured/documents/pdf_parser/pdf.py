@@ -3,7 +3,6 @@ import base64
 import io
 import json
 import re
-import time
 from collections import Counter
 from concurrent.futures import ThreadPoolExecutor
 from copy import deepcopy
@@ -1116,6 +1115,9 @@ class PDFDocument(Document):
         lang = None
 
         def _task(textpage_info, bytes_img, img, is_scan, lang, rot_matirx):
+            if self.mode == "local":
+                # 本地模式，不支持ocr等精细化处理
+                return []
             b64_data = base64.b64encode(bytes_img).decode()
             layout_inp = {"b64_image": b64_data}
             layout = self.layout_agent.predict(layout_inp)

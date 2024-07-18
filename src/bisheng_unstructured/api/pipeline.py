@@ -1,4 +1,3 @@
-import json
 import os
 from typing import Dict
 
@@ -107,7 +106,7 @@ class Pipeline(object):
         # part_params = inp.parameters
         if inp.mode == "topdf":
             return self.to_pdf(inp)
-        part_inp = {"filename": filename, **inp.parameters}
+        part_inp = {"filename": filename, "mode": self.mode, **inp.parameters}
         part_func = PARTITION_MAP.get(file_type)
         if part_func == partition_image and self.mode == 'local':
             raise Exception("本地模式不支持图片格式")
