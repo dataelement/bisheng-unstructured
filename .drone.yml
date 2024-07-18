@@ -33,7 +33,7 @@ steps: # 定义流水线执行步骤，这些步骤将顺序执行
       purge: true
       repo: 192.168.106.8:6082/dataelement/bisheng-unstructured
       tags: [ release ]
-      context: ./docker
+      context: ./
       dockerfile: ./docker/Dockerfile        
       username:
         from_secret: NEXUS_USER
