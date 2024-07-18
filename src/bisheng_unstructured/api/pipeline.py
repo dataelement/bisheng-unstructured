@@ -23,9 +23,15 @@ from .types import UnstructuredInput, UnstructuredOutput
 
 
 def partition_pdf(filename, model_params, **kwargs):
-    doc = PDFDocument(file=filename, model_params=model_params, **kwargs)
-    _ = doc.pages
-    return doc.elements
+    if kwargs.get("mode") == "local":
+        # 使用unstruct 进行解析
+        from unstructured.partition.pdf import partition_pdf
+
+        return partition_pdf(filename=filename, kwargs)
+    else:
+        doc = PDFDocument(file=filename, model_params=model_params, **kwargs)
+        _ = doc.pages
+        return doc.elements
 
 
 def partition_image(filename, model_params, **kwargs):

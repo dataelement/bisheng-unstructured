@@ -121,7 +121,7 @@ async def etl4_llm(inp: UnstructuredInput):
                 raise Exception(f"url data is damaged: {response.status_code}")
 
             with open(file_path, "wb") as fout:
-                fout.write(response.text)
+                fout.write(response.text.encode("utf-8"))
 
         inp.file_path = file_path
         inp.file_type = file_type

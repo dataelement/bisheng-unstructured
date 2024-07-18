@@ -41,7 +41,7 @@ from bisheng_unstructured.models import (
     TableDetAgent,
 )
 
-from .blob import Blob
+from bisheng_unstructured.documents.pdf_parser.blob import Blob
 
 ZH_CHAR = re.compile("[\u4e00-\u9fa5]")
 ENG_WORD = re.compile(pattern=r"^[a-zA-Z0-9?><;,{}[\]\-_+=!@#$%\^&*|']*$", flags=re.DOTALL)
@@ -289,6 +289,7 @@ class PDFDocument(Document):
         self.support_formula = support_formula
         self.enable_isolated_formula = enable_isolated_formula
         self.n_parallel = n_parallel
+        self.mode = kwargs.get("mode", "local")
         super().__init__()
 
     def _get_image_blobs(self, fitz_doc, pdf_reader, n=None, start=0):
@@ -1117,7 +1118,7 @@ class PDFDocument(Document):
         def _task(textpage_info, bytes_img, img, is_scan, lang, rot_matirx):
             if self.mode == "local":
                 # 本地模式，不支持ocr等精细化处理
-                return []
+                return textpage_info
             b64_data = base64.b64encode(bytes_img).decode()
             layout_inp = {"b64_image": b64_data}
             layout = self.layout_agent.predict(layout_inp)
@@ -1162,7 +1163,7 @@ class PDFDocument(Document):
                 bytes_imgs.append(bytes_img)
 
             timer.toc()
-            logger.info("pdfium render image", timer.get())
+            logger.info("pdfium render image ", timer.get())
 
             results = []
             with ThreadPoolExecutor(max_workers=self.n_parallel) as executor:

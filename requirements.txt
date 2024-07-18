@@ -74,3 +74,6 @@ xlrd==2.0.1
 uvicorn
 fastapi
 orjson
+
+# unstructured
+unstructured==0.14.10
