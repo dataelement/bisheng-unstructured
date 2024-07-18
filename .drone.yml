@@ -5,6 +5,17 @@ type: docker
 clone:
   disable: true
 
+volumes:
+- name: bisheng-cache
+  host:
+    path: /opt/drone/data/bisheng/
+- name: apt-cache
+  host:
+    path: /opt/drone/data/bisheng/apt/
+- name: socket
+  host:
+    path: /var/run/docker.sock
+    
 steps:
   - name: clone
     image: alpine/git
