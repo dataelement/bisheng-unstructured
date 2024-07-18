@@ -6,7 +6,7 @@ clone:
   disable: true
 
 steps:
-` - name: clone
+  - name: clone
     image: alpine/git
     pull: if-not-exists
     environment:
