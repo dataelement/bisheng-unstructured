@@ -20,7 +20,7 @@ from bisheng_unstructured.staging.base import convert_to_isd
 
 from bisheng_unstructured.api.any2pdf import Any2PdfCreator
 from bisheng_unstructured.api.types import UnstructuredInput, UnstructuredOutput
-from bisheng_unstructured.documents.elements import NarrativeText
+from bisheng_unstructured.documents.elements import ElementMetadata, NarrativeText
 
 
 def partition_pdf(filename, model_params, **kwargs):
@@ -33,10 +33,8 @@ def partition_pdf(filename, model_params, **kwargs):
             # 遍历每一页
             return [
                 NarrativeText(text=page.extract_text(),
-                              metadata={
-                                  "source": filename,
-                                  "page": page_num
-                              }) for page_num, page in enumerate(reader.pages)
+                              metadata=ElementMetadata(page_number=page_num))
+                for page_num, page in enumerate(reader.pages)
             ]
     else:
         doc = PDFDocument(file=filename, model_params=model_params, **kwargs)
