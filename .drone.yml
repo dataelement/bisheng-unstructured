@@ -40,13 +40,7 @@ steps:
         from_secret: NEXUS_USER
       password:
         from_secret: NEXUS_PASSWORD
-    when: # 无论成功失败 都运行
-      status:
-        - success
-      branch: # git 分支
-        - feat/*
-      event: # 事  件
-        - push
+ 
 
   - name: build_docker_tags
     pull: if-not-exists
