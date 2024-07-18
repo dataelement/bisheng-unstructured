@@ -18,16 +18,26 @@ from bisheng_unstructured.partition.tsv import partition_tsv
 from bisheng_unstructured.partition.xlsx import partition_xlsx
 from bisheng_unstructured.staging.base import convert_to_isd
 
-from .any2pdf import Any2PdfCreator
-from .types import UnstructuredInput, UnstructuredOutput
+from bisheng_unstructured.api.any2pdf import Any2PdfCreator
+from bisheng_unstructured.api.types import UnstructuredInput, UnstructuredOutput
+from bisheng_unstructured.documents.elements import NarrativeText
 
 
 def partition_pdf(filename, model_params, **kwargs):
     if kwargs.get("mode") == "local":
-        # 使用unstruct 进行解析
-        from unstructured.partition.pdf import partition_pdf
+        # pypdf 进行解析
+        import pypdf
+        with open(filename, "rb") as pdf:
+            reader = pypdf.PdfReader(pdf)
 
-        return partition_pdf(filename=filename, kwargs)
+            # 遍历每一页
+            return [
+                NarrativeText(text=page.extract_text(),
+                              metadata={
+                                  "source": filename,
+                                  "page": page_num
+                              }) for page_num, page in enumerate(reader.pages)
+            ]
     else:
         doc = PDFDocument(file=filename, model_params=model_params, **kwargs)
         _ = doc.pages

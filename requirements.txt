@@ -46,6 +46,7 @@ pdfminer-six==20221105
 pdfplumber==0.10.2
 wheel==0.41.0
 pypdfium2==4.23.1
+pypdf==4.3.0
 PyMuPDF==1.23.2
 opencv-python==4.8.0.76
 certifi==2023.7.22
@@ -74,6 +75,3 @@ xlrd==2.0.1
 uvicorn
 fastapi
 orjson
-
-# unstructured
-unstructured
