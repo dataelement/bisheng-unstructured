@@ -39,6 +39,10 @@ from bisheng_unstructured.models import (
     OCRAgent,
     TableAgent,
     TableDetAgent,
+    RTLayoutAgent,
+    RTOCRAgent,
+    RTTableAgent,
+    RTTableDetAgent,
 )
 
 from bisheng_unstructured.documents.pdf_parser.blob import Blob
@@ -270,10 +274,18 @@ class PDFDocument(Document):
         **kwargs,
     ) -> None:
         """Initialize with a file path."""
-        self.layout_agent = LayoutAgent(**model_params)
-        self.table_agent = TableAgent(**model_params)
-        self.ocr_agent = OCRAgent(**model_params)
-        self.table_det_agent = TableDetAgent(**model_params)
+        rt_type = kwargs.get("rt_type", "sdk")
+        if rt_type == "sdk":
+            self.layout_agent = LayoutAgent(**model_params)
+            self.table_agent = TableAgent(**model_params)
+            self.ocr_agent = OCRAgent(**model_params)
+            self.table_det_agent = TableDetAgent(**model_params)
+        else:
+            self.layout_agent = RTLayoutAgent(**model_params)
+            self.table_agent = RTTableAgent(**model_params)
+            self.ocr_agent = RTOCRAgent(**model_params)
+            self.table_det_agent = RTTableDetAgent(**model_params)
+
         self.formula_agent = FormulaAgent(**model_params)
 
         self.with_columns = with_columns
