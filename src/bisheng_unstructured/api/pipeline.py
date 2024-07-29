@@ -21,15 +21,16 @@ from bisheng_unstructured.staging.base import convert_to_isd
 from bisheng_unstructured.api.any2pdf import Any2PdfCreator
 from bisheng_unstructured.api.types import UnstructuredInput, UnstructuredOutput
 from bisheng_unstructured.documents.elements import ElementMetadata, NarrativeText
+from bisheng_unstructured.documents.pdf_parser.blob import Blob
 
 
 def partition_pdf(filename, model_params, **kwargs):
     if kwargs.get("mode") == "local":
         # pypdf 进行解析
         import pypdf
-        with open(filename, "rb") as pdf:
-            reader = pypdf.PdfReader(pdf)
-
+        blob = Blob.from_path(filename)
+        with blob.as_bytes_io() as pdf_file_obj:
+            reader = pypdf.PdfReader(pdf_file_obj)
             # 遍历每一页
             return [
                 NarrativeText(text=page.extract_text(),
@@ -123,7 +124,7 @@ class Pipeline(object):
         part_inp = {"filename": filename, "mode": self.mode, **inp.parameters}
         part_func = PARTITION_MAP.get(file_type)
         if part_func == partition_image and self.mode == 'local':
-            raise Exception("本地模式不支持图片格式")
+            return UnstructuredOutput(status_code=400, status_message="本地模型不支持图片")
 
         if part_func == partition_pdf or part_func == partition_image:
             part_inp.update({"model_params": self.pdf_model_params})

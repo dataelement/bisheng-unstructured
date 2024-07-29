@@ -11,10 +11,10 @@ from loguru import logger
 from bisheng_unstructured.common import Timer
 from bisheng_unstructured.config.settings import settings
 
-from ..common.logger import configure
-from ..middlewares.http_middleware import CustomMiddleware
-from .pipeline import Pipeline
-from .types import ConfigInput, UnstructuredInput, UnstructuredOutput
+from src.bisheng_unstructured.common.logger import configure
+from src.bisheng_unstructured.middlewares.http_middleware import CustomMiddleware
+from src.bisheng_unstructured.api.pipeline import Pipeline
+from src.bisheng_unstructured.api.types import ConfigInput, UnstructuredInput, UnstructuredOutput
 
 # Fastapi App
 
@@ -121,7 +121,7 @@ async def etl4_llm(inp: UnstructuredInput):
                 raise Exception(f"url data is damaged: {response.status_code}")
 
             with open(file_path, "wb") as fout:
-                fout.write(response.text.encode("utf-8"))
+                fout.write(response.content)
 
         inp.file_path = file_path
         inp.file_type = file_type
@@ -134,9 +134,12 @@ async def etl4_llm(inp: UnstructuredInput):
         if inp.file_type != "pdf" and inp.mode == "partition":
             # partition 模式，转pdf 后处理
             inp.mode = "topdf"
-            b64_pdf = pipeline.predict(inp)
+            pdf_ret = pipeline.predict(inp)
+            if pdf_ret and pdf_ret.status_code != 200:
+                logger.error(f"topdf failed filename=[{inp.filename}]")
+                raise ValueError(f"topdf failed")
             with open(file_path, "wb") as fout:
-                fout.write(base64.b64decode(b64_pdf))
+                fout.write(base64.b64decode(pdf_ret.b64_pdf))
             inp.file_type = "pdf"
             inp.mode = "partition"
 
