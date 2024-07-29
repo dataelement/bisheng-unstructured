@@ -76,6 +76,7 @@ class Pipeline(object):
         """k8s 使用cm 创建环境变量"""
         tmp_dict = settings
         rt_ep = os.getenv("rt_server")
+        self.rt_type = os.getenv("rt_type", "sdk")
         if rt_ep:
             pdf_model_params_temp = {
                 "layout_ep": f"http://{rt_ep}/v2.1/models/elem_layout_v1/infer",
@@ -121,7 +122,12 @@ class Pipeline(object):
         # part_params = inp.parameters
         if inp.mode == "topdf":
             return self.to_pdf(inp)
-        part_inp = {"filename": filename, "mode": self.mode, **inp.parameters}
+        part_inp = {
+            "filename": filename,
+            "mode": self.mode,
+            'rt_type': self.rt_type,
+            **inp.parameters
+        }
         part_func = PARTITION_MAP.get(file_type)
         if part_func == partition_image and self.mode == 'local':
             return UnstructuredOutput(status_code=400, status_message="本地模型不支持图片")
