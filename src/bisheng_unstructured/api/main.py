@@ -11,10 +11,10 @@ from loguru import logger
 from bisheng_unstructured.common import Timer
 from bisheng_unstructured.config.settings import settings
 
-from src.bisheng_unstructured.common.logger import configure
-from src.bisheng_unstructured.middlewares.http_middleware import CustomMiddleware
-from src.bisheng_unstructured.api.pipeline import Pipeline
-from src.bisheng_unstructured.api.types import ConfigInput, UnstructuredInput, UnstructuredOutput
+from bisheng_unstructured.common.logger import configure
+from bisheng_unstructured.middlewares.http_middleware import CustomMiddleware
+from bisheng_unstructured.api.pipeline import Pipeline
+from bisheng_unstructured.api.types import ConfigInput, UnstructuredInput, UnstructuredOutput
 
 # Fastapi App
 
