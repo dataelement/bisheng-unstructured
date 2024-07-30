@@ -78,29 +78,40 @@ class Pipeline(object):
         rt_ep = os.getenv("rt_server")
         self.rt_type = os.getenv("rt_type", "sdk")
         if rt_ep:
-            pdf_model_params_temp = {
-                "layout_ep": f"http://{rt_ep}/v2.1/models/elem_layout_v1/infer",
-                "cell_model_ep": f"http://{rt_ep}/v2.1/models/elem_table_cell_detect_v1/infer",
-                "rowcol_model_ep": f"http://{rt_ep}/v2.1/models/elem_table_rowcol_detect_v1/infer",
-                "table_model_ep": f"http://{rt_ep}/v2.1/models/elem_table_detect_v1/infer",
-                "ocr_model_ep": f"http://{rt_ep}/v2.1/models/elem_ocr_collection_v3/infer",
-            }
+            if self.rt_type == "sdk":
+                pdf_model_params_temp = {
+                    "layout_ep": f"http://{rt_ep}/v2/idp/idp_app/infer",
+                    "cell_model_ep": f"http://{rt_ep}/v2/idp/idp_app/infer",
+                    "rowcol_model_ep": f"http://{rt_ep}/v2/idp/idp_app/infer",
+                    "table_model_ep": f"http://{rt_ep}/v2/idp/idp_app/infer",
+                    "ocr_model_ep": f"http://{rt_ep}/v2/idp/idp_app/infer"
+                }
+            else:
+                pdf_model_params_temp = {
+                    "layout_ep": f"http://{rt_ep}/v2.1/models/elem_layout_v1/infer",
+                    "cell_model_ep": f"http://{rt_ep}/v2.1/models/elem_table_cell_detect_v1/infer",
+                    "rowcol_model_ep":
+                    f"http://{rt_ep}/v2.1/models/elem_table_rowcol_detect_v1/infer",
+                    "table_model_ep": f"http://{rt_ep}/v2.1/models/elem_table_detect_v1/infer",
+                    "ocr_model_ep": f"http://{rt_ep}/v2.1/models/elem_ocr_collection_v3/infer",
+                }
             self.mode = "sdk"
             self.config = {"pdf_model_params": pdf_model_params_temp}
         else:
             self.mode = "local"
             self.config = tmp_dict
+
         self.pdf_model_params = self.config.get("pdf_model_params")
         topdf_model_params = self.config.get("topdf_model_params", {})
         self.pdf_creator = Any2PdfCreator(topdf_model_params)
 
-    def update_config(self, config_dict):
-        self.config = config_dict
-        self.pdf_model_params = self.config.get("pdf_model_params")
-        if self.pdf_model_params:
-            self.mode = "sdk"
-        topdf_model_params = self.config.get("topdf_model_params", {})
-        self.pdf_creator = Any2PdfCreator(topdf_model_params)
+    # def update_config(self, config_dict):
+    #     self.config = config_dict
+    #     self.pdf_model_params = self.config.get("pdf_model_params")
+    #     if self.pdf_model_params:
+    #         self.mode = "sdk"
+    #     topdf_model_params = self.config.get("topdf_model_params", {})
+    #     self.pdf_creator = Any2PdfCreator(topdf_model_params)
 
     def to_pdf(self, inp: UnstructuredInput) -> UnstructuredOutput:
         try:
