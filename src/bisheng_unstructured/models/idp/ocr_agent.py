@@ -10,54 +10,50 @@ import numpy as np
 import requests
 from PIL import Image
 
-from ..common import (
-    bbox_overlap,
-    draw_polygon,
-    get_hori_rect_v2,
-    is_valid_box,
-    join_line_outs,
-    list2box,
-    pil2opencv,
-    save_pillow_to_base64,
-    sort_boxes,
-    split_line_image,
-    load_json
-)
+from ..common import (bbox_overlap, draw_polygon, get_hori_rect_v2, is_valid_box, join_line_outs,
+                      list2box, pil2opencv, save_pillow_to_base64, sort_boxes, split_line_image,
+                      load_json)
 
 DEFAULT_CONFIG = {
     "params": {
-            "sort_filter_boxes": True,
-            "enable_huarong_box_adjust": True,
-            "rotateupright": False,
-            "support_long_image_segment": True,
-            "split_long_sentence_blank": True,
-        },
+        "sort_filter_boxes": True,
+        "enable_huarong_box_adjust": True,
+        "rotateupright": False,
+        "support_long_image_segment": True,
+        "split_long_sentence_blank": True,
+    },
     "scene_mapping": {
-            "print": {
-                "det": "general_text_det_mrcnn_v2.0",
-                "recog": "transformer-blank-v0.2-faster",
-            },
-            "hand": {
-                "det": "general_text_det_mrcnn_v2.0",
-                "recog": "transformer-hand-v1.16-faster",
-            },
-            "print_recog": {
-                "recog": "transformer-blank-v0.2-faster",
-            },
-            "hand_recog": {
-                "recog": "transformer-hand-v1.16-faster",
-            },
-            "det": {
-                "det": "general_text_det_mrcnn_v2.0",
-            },
-        }
+        "print": {
+            "det": "general_text_det_v2.0",
+            "recog": "general_text_reg_nb_v1.0_faster",
+        },
+        "hand": {
+            "det": "general_text_det_mrcnn_v2.0",
+            "recog": "transformer-hand-v1.16-faster",
+        },
+        "print_recog": {
+            "recog": "transformer-blank-v0.2-faster",
+        },
+        "hand_recog": {
+            "recog": "transformer-hand-v1.16-faster",
+        },
+        "det": {
+            "det": "general_text_det_mrcnn_v2.0",
+        },
+    }
 }
 
-ocr_predict_bak = {'code': 200, 'message': 'ok', 'request_id': 21513655180, 
-                   'elapse': 595, 'result': 
-                   {'ocr_result': {}}}
-        
-    
+ocr_predict_bak = {
+    'code': 200,
+    'message': 'ok',
+    'request_id': 21513655180,
+    'elapse': 595,
+    'result': {
+        'ocr_result': {}
+    }
+}
+
+
 def convert_json(inp):
     res = copy.deepcopy(ocr_predict_bak)
     res["result"]["ocr_result"] = inp["data"]["json"]["general_ocr_res"]
@@ -67,6 +63,7 @@ def convert_json(inp):
 # OCR Agent Version 0.1, update at 2023.08.18
 #  - add predict_with_mask support recog with embedding formula, 2024.01.16
 class OCRAgent(object):
+
     def __init__(self, **kwargs):
         self.ep = kwargs.get("ocr_model_ep")
         self.client = requests.Session()
