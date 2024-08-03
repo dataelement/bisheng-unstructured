@@ -41,7 +41,7 @@ def partition_pdf(filename, model_params, **kwargs):
             ]
     else:
         rt_type = kwargs.get("rt_type", "sdk")
-        if rt_type == "sdk":
+        if rt_type in {"sdk", "idp"}:
             doc = IDP_PDFDocument(file=filename, model_params=model_params, **kwargs)
         else:
             doc = PDFDocument(file=filename, model_params=model_params, **kwargs)
@@ -52,7 +52,7 @@ def partition_pdf(filename, model_params, **kwargs):
 
 def partition_image(filename, model_params, **kwargs):
     rt_type = kwargs.get("rt_type", "sdk")
-    if rt_type == "sdk":
+    if rt_type in {"sdk", "idp"}:
         doc = IDP_ImageDocument(file=filename, model_params=model_params, **kwargs)
     else:
         doc = ImageDocument(file=filename, model_params=model_params, **kwargs)
@@ -90,7 +90,7 @@ class Pipeline(object):
         rt_ep = os.getenv("rt_server")
         self.rt_type = os.getenv("rt_type", "sdk")
         if rt_ep:
-            if self.rt_type == "sdk":
+            if self.rt_type in {"sdk", "idp"}:
                 pdf_model_params_temp = {
                     "layout_ep": f"http://{rt_ep}/v2/idp/idp_app/infer",
                     "cell_model_ep": f"http://{rt_ep}/v2/idp/idp_app/infer",

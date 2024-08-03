@@ -275,7 +275,7 @@ class PDFDocument(Document):
     ) -> None:
         """Initialize with a file path."""
         rt_type = kwargs.get("rt_type", "sdk")
-        if rt_type == "sdk":
+        if rt_type in {"sdk", "idp"}:
             self.layout_agent = LayoutAgent(**model_params)
             self.table_agent = TableAgent(**model_params)
             self.ocr_agent = OCRAgent(**model_params)
