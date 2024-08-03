@@ -2,7 +2,6 @@ import os
 from typing import Dict
 
 from loguru import logger
-from sympy import Id
 
 from bisheng_unstructured.documents.html_utils import save_to_txt, visualize_html
 from bisheng_unstructured.documents.pdf_parser.image import ImageDocument
