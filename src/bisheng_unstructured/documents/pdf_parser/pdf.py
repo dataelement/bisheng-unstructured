@@ -960,8 +960,7 @@ class PDFDocument(Document):
 
         return groups
 
-    def _allocate_co
-    ntinuous(self, groups, lang):
+    def _allocate_continuous(self, groups, lang):
         g_bound = []
         groups = [g for g in groups if g]
         for blocks in groups:

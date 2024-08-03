@@ -3,7 +3,7 @@ import copy
 import os
 import requests
 
-from src.bisheng_unstructured.models.common import (load_json)
+from bisheng_unstructured.models.common import (load_json)
 
 DEFAULT_CONFIG = {
     "params": {

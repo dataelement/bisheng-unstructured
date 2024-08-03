@@ -1,4 +1,3 @@
-import base64
 import copy
 
 import requests
@@ -6,6 +5,7 @@ import requests
 
 # Layout Agent Version 0.1, update at 2023.08.18
 class LayoutAgent(object):
+
     def __init__(self, *args, **kwargs):
         self.ep = kwargs.get("layout_ep")
         self.client = requests.Session()
