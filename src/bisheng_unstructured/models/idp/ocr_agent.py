@@ -1,18 +1,9 @@
-import base64
 import copy
-import io
-from functools import cmp_to_key
-from typing import Any, Dict, List, Union
 
-import cv2
 import os
-import numpy as np
 import requests
-from PIL import Image
 
-from ..common import (bbox_overlap, draw_polygon, get_hori_rect_v2, is_valid_box, join_line_outs,
-                      list2box, pil2opencv, save_pillow_to_base64, sort_boxes, split_line_image,
-                      load_json)
+from src.bisheng_unstructured.models.common import (load_json)
 
 DEFAULT_CONFIG = {
     "params": {
@@ -92,8 +83,8 @@ class OCRAgent(object):
 
         try:
             r = self.client.post(url=self.ep, json=req_data, timeout=self.timeout)
-            ret = convert_json(r.json())
-            return ret
+            # ret = convert_json(r.json())
+            return r.json()
         except requests.exceptions.Timeout:
             raise Exception(f"timeout in ocr predict")
         except Exception as e:

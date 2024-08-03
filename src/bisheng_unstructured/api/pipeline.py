@@ -2,10 +2,13 @@ import os
 from typing import Dict
 
 from loguru import logger
+from sympy import Id
 
 from bisheng_unstructured.documents.html_utils import save_to_txt, visualize_html
 from bisheng_unstructured.documents.pdf_parser.image import ImageDocument
 from bisheng_unstructured.documents.pdf_parser.pdf import PDFDocument
+from bisheng_unstructured.documents.pdf_parser.idp.pdf import PDFDocument as IDP_PDFDocument
+from bisheng_unstructured.documents.pdf_parser.idp.image import ImageDocument as IDP_ImageDocument
 from bisheng_unstructured.partition.csv import partition_csv
 from bisheng_unstructured.partition.doc import partition_doc
 from bisheng_unstructured.partition.docx import partition_docx
@@ -38,13 +41,23 @@ def partition_pdf(filename, model_params, **kwargs):
                 for page_num, page in enumerate(reader.pages)
             ]
     else:
-        doc = PDFDocument(file=filename, model_params=model_params, **kwargs)
+        rt_type = kwargs.get("rt_type", "sdk")
+        if rt_type == "sdk":
+            doc = IDP_PDFDocument(file=filename, model_params=model_params, **kwargs)
+        else:
+            doc = PDFDocument(file=filename, model_params=model_params, **kwargs)
+
         _ = doc.pages
         return doc.elements
 
 
 def partition_image(filename, model_params, **kwargs):
-    doc = ImageDocument(file=filename, model_params=model_params, **kwargs)
+    rt_type = kwargs.get("rt_type", "sdk")
+    if rt_type == "sdk":
+        doc = IDP_ImageDocument(file=filename, model_params=model_params, **kwargs)
+    else:
+        doc = ImageDocument(file=filename, model_params=model_params, **kwargs)
+
     _ = doc.pages
     return doc.elements
 
