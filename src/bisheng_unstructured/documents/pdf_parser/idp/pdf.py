@@ -15,8 +15,6 @@ import fitz as pymupdf
 import numpy as np
 import pypdfium2
 from PIL import Image, ImageOps
-from shapely import Polygon
-from shapely import box as Rect
 
 from bisheng_unstructured.common import Timer
 from bisheng_unstructured.documents.base import Document, Page
@@ -27,7 +25,7 @@ from bisheng_unstructured.documents.elements import (
     Text,
     Title,
 )
-from bisheng_unstructured.models.idp.dummy_ocr_agent import OCRAgent
+from bisheng_unstructured.models.idp.ocr_agent import OCRAgent
 
 from ..blob import Blob
 
@@ -346,8 +344,7 @@ class PDFDocument(Document):
                     bytes_img = bytes_imgs[idx - start]
                     img = page_imgs[idx - start]
                     futures.append(
-                        executor.submit(_task, bytes_img, img, is_scan, lang, rot_matrix)
-                    )
+                        executor.submit(_task, bytes_img, img, is_scan, lang, rot_matrix))
 
                 idx = start
                 for future in futures:

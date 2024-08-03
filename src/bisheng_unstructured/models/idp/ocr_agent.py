@@ -4,6 +4,7 @@ import os
 import requests
 
 from bisheng_unstructured.models.common import (load_json)
+from bisheng_unstructured.models.idp.dummy_ocr_agent import BlockInfo, process_whole_paragraph
 
 DEFAULT_CONFIG = {
     "params": {
@@ -82,9 +83,20 @@ class OCRAgent(object):
         req_data = {"param": params, "data": [b64_image]}
 
         try:
-            r = self.client.post(url=self.ep, json=req_data, timeout=self.timeout)
+            r = self.client.post(url=self.ep, json=req_data, timeout=self.timeout).json()
             # ret = convert_json(r.json())
-            return r.json()
+            layout_text, layout_boxs = process_whole_paragraph(
+                r["data"]["json"]["general_ocr_res"])
+            b0 = BlockInfo(
+                block=[],
+                block_text=''.join([''.join(text) for text in layout_text]),
+                block_no=0,
+                ts=[''.join(text) for text in layout_text],
+                rs=[''.join(text) for text in layout_boxs],
+                layout_type=0,
+            )
+            return [b0]
+            # return r.json()
         except requests.exceptions.Timeout:
             raise Exception(f"timeout in ocr predict")
         except Exception as e:
