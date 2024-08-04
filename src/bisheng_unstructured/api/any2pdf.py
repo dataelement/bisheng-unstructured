@@ -5,6 +5,7 @@ from bisheng_unstructured.topdf import DocxToPDFV1, ExcelToPDF, PptxToPDF, Text2
 
 
 class Any2PdfCreator(object):
+
     def __init__(self, kwargs):
         self.type_to_creator_map = {
             "png": PdfCreator,

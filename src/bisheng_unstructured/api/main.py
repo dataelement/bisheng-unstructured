@@ -1,5 +1,4 @@
 import base64
-import json
 import os
 import tempfile
 
@@ -12,10 +11,10 @@ from loguru import logger
 from bisheng_unstructured.common import Timer
 from bisheng_unstructured.config.settings import settings
 
-from ..common.logger import configure
-from ..middlewares.http_middleware import CustomMiddleware
-from .pipeline import Pipeline
-from .types import ConfigInput, UnstructuredInput, UnstructuredOutput
+from bisheng_unstructured.common.logger import configure
+from bisheng_unstructured.middlewares.http_middleware import CustomMiddleware
+from bisheng_unstructured.api.pipeline import Pipeline
+from bisheng_unstructured.api.types import ConfigInput, UnstructuredInput, UnstructuredOutput
 
 # Fastapi App
 
@@ -62,31 +61,6 @@ app = create_app()
 pipeline = Pipeline(settings.dict())
 
 
-@app.post("/v1/config/update")
-async def update_config(inp: ConfigInput):
-    pdf_model_params_temp = {
-        "layout_ep": "http://{0}/v2.1/models/elem_layout_v1/infer",
-        "cell_model_ep": ("http://{0}/v2.1/models/elem_table_cell_detect_v1/infer"),
-        "rowcol_model_ep": ("http://{0}/v2.1/models/elem_table_rowcol_detect_v1/infer"),
-        "table_model_ep": "http://{0}/v2.1/models/elem_table_detect_v1/infer",
-        "ocr_model_ep": "http://{0}/v2.1/models/elem_ocr_collection_v3/infer",
-    }
-
-    if inp.rt_ep is not None:
-        # update environment
-        os.environ["rt_server"] = inp.rt_ep
-        pdf_model_params = {}
-        for k, v in pdf_model_params_temp.items():
-            pdf_model_params[k] = v.format(inp.rt_ep)
-
-        config_dict = {"pdf_model_params": pdf_model_params}
-    else:
-        config_dict = inp.dict()
-
-    pipeline.update_config(config_dict)
-    return {"status": "OK"}
-
-
 @app.get("/v1/config")
 async def config():
     return {"status": "OK", "config": pipeline.config}
@@ -122,13 +96,34 @@ async def etl4_llm(inp: UnstructuredInput):
                 raise Exception(f"url data is damaged: {response.status_code}")
 
             with open(file_path, "wb") as fout:
-                fout.write(response.text)
+                fout.write(response.content)
 
         inp.file_path = file_path
         inp.file_type = file_type
 
+        if pipeline.mode == "local":
+            # 本地模式只支持text 有限格式
+            logger.info(f"local_pipeline mode=[{inp.mode}] filename=[{inp.filename}]")
+            inp.mode = "text"
+
+        if inp.file_type != "pdf" and inp.mode == "partition":
+            # partition 模式，转pdf 后处理
+            inp.mode = "topdf"
+            pdf_ret = pipeline.predict(inp)
+            if pdf_ret and pdf_ret.status_code != 200:
+                logger.error(f"topdf failed filename=[{inp.filename}]")
+                raise ValueError(f"topdf failed")
+            with open(file_path, "wb") as fout:
+                fout.write(base64.b64decode(pdf_ret.b64_pdf))
+            inp.file_type = "pdf"
+            inp.mode = "partition"
+
         timer.toc()
         outp = pipeline.predict(inp)
+        if inp.mode == "partition":
+            with open(file_path, "rb") as fin:
+                outp.b64_pdf = base64.b64encode(fin.read()).decode("utf-8")
+
         timer.toc()
         logger.info(f"succ etl4llm with filename=[{inp.filename}] elapses=[{timer.get()}]]")
         return outp

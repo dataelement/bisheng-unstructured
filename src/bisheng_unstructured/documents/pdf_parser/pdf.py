@@ -3,7 +3,6 @@ import base64
 import io
 import json
 import re
-import time
 from collections import Counter
 from concurrent.futures import ThreadPoolExecutor
 from copy import deepcopy
@@ -40,9 +39,13 @@ from bisheng_unstructured.models import (
     OCRAgent,
     TableAgent,
     TableDetAgent,
+    RTLayoutAgent,
+    RTOCRAgent,
+    RTTableAgent,
+    RTTableDetAgent,
 )
 
-from .blob import Blob
+from bisheng_unstructured.documents.pdf_parser.blob import Blob
 
 ZH_CHAR = re.compile("[\u4e00-\u9fa5]")
 ENG_WORD = re.compile(pattern=r"^[a-zA-Z0-9?><;,{}[\]\-_+=!@#$%\^&*|']*$", flags=re.DOTALL)
@@ -166,6 +169,7 @@ class BlockInfo:
 
 
 class Segment:
+
     def __init__(self, seg):
         self.whole = seg
         self.segs = []
@@ -270,10 +274,18 @@ class PDFDocument(Document):
         **kwargs,
     ) -> None:
         """Initialize with a file path."""
-        self.layout_agent = LayoutAgent(**model_params)
-        self.table_agent = TableAgent(**model_params)
-        self.ocr_agent = OCRAgent(**model_params)
-        self.table_det_agent = TableDetAgent(**model_params)
+        rt_type = kwargs.get("rt_type", "sdk")
+        if rt_type in {"sdk", "idp"}:
+            self.layout_agent = LayoutAgent(**model_params)
+            self.table_agent = TableAgent(**model_params)
+            self.ocr_agent = OCRAgent(**model_params)
+            self.table_det_agent = TableDetAgent(**model_params)
+        else:
+            self.layout_agent = RTLayoutAgent(**model_params)
+            self.table_agent = RTTableAgent(**model_params)
+            self.ocr_agent = RTOCRAgent(**model_params)
+            self.table_det_agent = RTTableDetAgent(**model_params)
+
         self.formula_agent = FormulaAgent(**model_params)
 
         self.with_columns = with_columns
@@ -289,6 +301,7 @@ class PDFDocument(Document):
         self.support_formula = support_formula
         self.enable_isolated_formula = enable_isolated_formula
         self.n_parallel = n_parallel
+        self.mode = kwargs.get("mode", "local")
         super().__init__()
 
     def _get_image_blobs(self, fitz_doc, pdf_reader, n=None, start=0):
@@ -325,9 +338,8 @@ class PDFDocument(Document):
             if block_type != 0:
                 bbox = block["bbox"]
                 block_text = ""
-                block_info = BlockInfo(
-                    [bbox[0], bbox[1], bbox[2], bbox[3]], block_text, block_no, block_type
-                )
+                block_info = BlockInfo([bbox[0], bbox[1], bbox[2], bbox[3]], block_text, block_no,
+                                       block_type)
                 line_blocks.append(block_info)
                 line_words_info.append((None, None))
 
@@ -364,7 +376,8 @@ class PDFDocument(Document):
                     continue
 
                 line_words_info.append((words, words_bboxes))
-                line_text = "".join([char["c"] for span in line["spans"] for char in span["chars"]])
+                line_text = "".join(
+                    [char["c"] for span in line["spans"] for char in span["chars"]])
                 bb0, bb1, bb2, bb3 = merge_rects(np.asarray(words_bboxes))
 
                 block_info = BlockInfo([bb0, bb1, bb2, bb3], line_text, block_no, block_type)
@@ -382,9 +395,8 @@ class PDFDocument(Document):
             if block_type != 0:
                 bbox = block["bbox"]
                 block_text = ""
-                block_info = BlockInfo(
-                    [bbox[0], bbox[1], bbox[2], bbox[3]], block_text, block_no, block_type
-                )
+                block_info = BlockInfo([bbox[0], bbox[1], bbox[2], bbox[3]], block_text, block_no,
+                                       block_type)
                 line_blocks.append(block_info)
                 line_words_info.append((None, None))
 
@@ -399,9 +411,8 @@ class PDFDocument(Document):
                 line_words_info.append((words, words_bbox))
 
                 line_text = "".join([span["text"] for span in line["spans"]])
-                block_info = BlockInfo(
-                    [bbox[0], bbox[1], bbox[2], bbox[3]], line_text, block_no, block_type
-                )
+                block_info = BlockInfo([bbox[0], bbox[1], bbox[2], bbox[3]], line_text, block_no,
+                                       block_type)
                 line_blocks.append(block_info)
 
         return line_blocks, line_words_info
@@ -458,8 +469,7 @@ class PDFDocument(Document):
             # step 6. merge the segmented line patches and sort by tlbr
             inp = {"b64_image": b64_image}
             mf_outs = self.formula_agent.predict(
-                inp, img, enable_isolated_formula=self.enable_isolated_formula
-            )
+                inp, img, enable_isolated_formula=self.enable_isolated_formula)
             texts, bboxes, words_info = self.ocr_agent.predict_with_mask(img, mf_outs)
         else:
             # get general ocr result
@@ -546,9 +556,14 @@ class PDFDocument(Document):
         else:
             return textpage_info
 
-    def _allocate_semantic(
-        self, textpage_info, layout, b64_image, img, is_scan=True, lang="zh", rot_matrix=None
-    ):
+    def _allocate_semantic(self,
+                           textpage_info,
+                           layout,
+                           b64_image,
+                           img,
+                           is_scan=True,
+                           lang="zh",
+                           rot_matrix=None):
         class_name = ["印章", "图片", "标题", "段落", "表格", "页眉", "页码", "页脚"]
         effective_class_inds = [3, 4, 5, 999, 1000]
         non_conti_class_ids = [6, 7, 8]
@@ -708,10 +723,8 @@ class PDFDocument(Document):
                 ord_ind = np.min(ori_orders)
                 mask[ind] = 1
                 new_block_info.append(
-                    BlockInfo(
-                        [rect[0], rect[1], rect[2], rect[3]], "", -1, -1, ts, rs, ind, ord_ind
-                    )
-                )
+                    BlockInfo([rect[0], rect[1], rect[2], rect[3]], "", -1, -1, ts, rs, ind,
+                              ord_ind))
                 max_block_type = np.max([blocks[i].block_type for i in ind])
                 if max_block_type == FORMULA_ID:
                     new_block_info[-1].layout_type = FORMULA_ID
@@ -733,10 +746,8 @@ class PDFDocument(Document):
                 mask[start:end] = 1
 
                 new_block_info.append(
-                    BlockInfo(
-                        [rect[0], rect[1], rect[2], rect[3]], "", -1, -1, ts, rs, pos, ord_ind
-                    )
-                )
+                    BlockInfo([rect[0], rect[1], rect[2], rect[3]], "", -1, -1, ts, rs, pos,
+                              ord_ind))
 
                 max_block_type = np.max([blocks[i].block_type for i in pos])
                 if max_block_type == FORMULA_ID:
@@ -1117,12 +1128,14 @@ class PDFDocument(Document):
         lang = None
 
         def _task(textpage_info, bytes_img, img, is_scan, lang, rot_matirx):
+            if self.mode == "local":
+                # 本地模式，不支持ocr等精细化处理
+                return textpage_info
             b64_data = base64.b64encode(bytes_img).decode()
             layout_inp = {"b64_image": b64_data}
             layout = self.layout_agent.predict(layout_inp)
-            blocks = self._allocate_semantic(
-                textpage_info, layout, b64_data, img, is_scan, lang, rot_matrix
-            )
+            blocks = self._allocate_semantic(textpage_info, layout, b64_data, img, is_scan, lang,
+                                             rot_matrix)
             return blocks
 
         with blob.as_bytes_io() as file_path:
@@ -1162,7 +1175,7 @@ class PDFDocument(Document):
                 bytes_imgs.append(bytes_img)
 
             timer.toc()
-            logger.info("pdfium render image", timer.get())
+            logger.info("pdfium render image ", timer.get())
 
             results = []
             with ThreadPoolExecutor(max_workers=self.n_parallel) as executor:
@@ -1193,10 +1206,8 @@ class PDFDocument(Document):
                     # blocks = _task(textpage_info, bytes_img, img, is_scan, lang, rot_matrix)
 
                     futures.append(
-                        executor.submit(
-                            _task, textpage_info, bytes_img, img, is_scan, lang, rot_matrix
-                        )
-                    )
+                        executor.submit(_task, textpage_info, bytes_img, img, is_scan, lang,
+                                        rot_matrix))
 
                 idx = start
                 for future in futures:

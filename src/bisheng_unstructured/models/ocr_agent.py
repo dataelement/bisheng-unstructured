@@ -1,9 +1,4 @@
-import base64
 import copy
-import io
-import os
-from functools import cmp_to_key
-from typing import Any, Dict, List, Union
 
 import cv2
 import numpy as np
@@ -12,14 +7,13 @@ from PIL import Image
 
 from bisheng_unstructured.config.settings import settings
 
-from .common import (
+from bisheng_unstructured.models.common import (
     bbox_overlap,
     draw_polygon,
     get_hori_rect_v2,
     is_valid_box,
     join_line_outs,
     list2box,
-    load_json,
     pil2opencv,
     save_pillow_to_base64,
     sort_boxes,
@@ -59,6 +53,7 @@ DEFAULT_CONFIG = {
 # OCR Agent Version 0.1, update at 2023.08.18
 #  - add predict_with_mask support recog with embedding formula, 2024.01.16
 class OCRAgent(object):
+
     def __init__(self, **kwargs):
         self.ep = kwargs.get("ocr_model_ep")
         self.client = requests.Session()
@@ -123,8 +118,10 @@ class OCRAgent(object):
 
                 xmin, ymin = max(0, int(box[0][0]) - 1), max(0, int(box[0][1]) - 1)
                 xmax, ymax = (
-                    min(img0.size[0], int(box[2][0]) + 1),
-                    min(img0.size[1], int(box[2][1]) + 1),
+                    min(img0.size[0],
+                        int(box[2][0]) + 1),
+                    min(img0.size[1],
+                        int(box[2][1]) + 1),
                 )
                 img[ymin:ymax, xmin:xmax, :] = 255
 
@@ -154,13 +151,11 @@ class OCRAgent(object):
                     emb_bbox = [bb[0], bb[1], bb[4], bb[5]]
                     bbox_iou = bbox_overlap(hori_bbox, emb_bbox)
                     if bbox_iou > EMB_BBOX_THREHOLD:
-                        embed_mfs.append(
-                            {
-                                "position": emb_bbox,
-                                "text": box_info["text"],
-                                "type": box_info["type"],
-                            }
-                        )
+                        embed_mfs.append({
+                            "position": emb_bbox,
+                            "text": box_info["text"],
+                            "type": box_info["type"],
+                        })
 
             ocr_boxes = split_line_image(hori_bbox, embed_mfs)
             text_bboxes.extend(ocr_boxes)
