@@ -85,14 +85,14 @@ class OCRAgent(object):
         try:
             r = self.client.post(url=self.ep, json=req_data, timeout=self.timeout).json()
             # ret = convert_json(r.json())
-            layout_text, layout_boxs = process_whole_paragraph(
-                r["data"]["json"]["general_ocr_res"])
+
+            layout_text, layout_boxs = process_whole_paragraph(r["result"]['ocr_result'])
             b0 = BlockInfo(
-                block=[],
+                bbox=[],
                 block_text=''.join([''.join(text) for text in layout_text]),
                 block_no=0,
                 ts=[''.join(text) for text in layout_text],
-                rs=[''.join(text) for text in layout_boxs],
+                rs=[text[0] for text in layout_boxs],
                 layout_type=0,
             )
             return [b0]

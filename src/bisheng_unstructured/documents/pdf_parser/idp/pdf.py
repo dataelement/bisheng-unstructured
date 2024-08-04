@@ -2,10 +2,7 @@
 """Loads PDF with semantic partition."""
 import base64
 import io
-import json
 import re
-import time
-from collections import Counter
 from concurrent.futures import ThreadPoolExecutor
 from copy import deepcopy
 from dataclasses import dataclass
@@ -27,7 +24,7 @@ from bisheng_unstructured.documents.elements import (
 )
 from bisheng_unstructured.models.idp.ocr_agent import OCRAgent
 
-from ..blob import Blob
+from bisheng_unstructured.documents.pdf_parser.blob import Blob
 
 ZH_CHAR = re.compile("[\u4e00-\u9fa5]")
 ENG_WORD = re.compile(pattern=r"^[a-zA-Z0-9?><;,{}[\]\-_+=!@#$%\^&*|']*$", flags=re.DOTALL)
@@ -246,7 +243,7 @@ class PDFDocument(Document):
                     element = Table(text=text, metadata=metadata)
                 else:
                     prev_ind = 0
-                    line_bboxes = [b for b in b.rs]
+                    line_bboxes = [[] for b in b.rs]
                     lines = b.ts
                     line_cnt = len(lines)
                     extra_data.update({"bboxes": line_bboxes})
