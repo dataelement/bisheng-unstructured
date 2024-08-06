@@ -24,7 +24,7 @@ from bisheng_unstructured.api.any2pdf import Any2PdfCreator
 from bisheng_unstructured.api.types import UnstructuredInput, UnstructuredOutput
 from bisheng_unstructured.documents.elements import ElementMetadata, NarrativeText
 from bisheng_unstructured.documents.pdf_parser.blob import Blob
-from src.bisheng_unstructured.partition.xls import partition_xls
+from bisheng_unstructured.partition.xls import partition_xls
 
 
 def partition_pdf(filename, model_params, **kwargs):
