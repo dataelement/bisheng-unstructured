@@ -2,3 +2,4 @@ data/
 sftp-config.json
 .isort.cfg
 .idea/
+.DS_Store
