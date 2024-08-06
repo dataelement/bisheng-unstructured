@@ -90,7 +90,7 @@ class Pipeline(object):
         """k8s 使用cm 创建环境变量"""
         tmp_dict = settings
         rt_ep = os.getenv("rt_server")
-        self.rt_type = os.getenv("rt_type", "sdk")
+        self.rt_type = os.getenv("rt_type", "rt")
         if rt_ep:
             if self.rt_type in {"sdk", "idp"}:
                 pdf_model_params_temp = {
