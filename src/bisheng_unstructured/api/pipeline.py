@@ -3,11 +3,15 @@ from typing import Dict
 
 from loguru import logger
 
+from bisheng_unstructured.api.any2pdf import Any2PdfCreator
+from bisheng_unstructured.api.types import UnstructuredInput, UnstructuredOutput
+from bisheng_unstructured.documents.elements import ElementMetadata, NarrativeText
 from bisheng_unstructured.documents.html_utils import save_to_txt, visualize_html
+from bisheng_unstructured.documents.pdf_parser.blob import Blob
+from bisheng_unstructured.documents.pdf_parser.idp.image import ImageDocument as IDP_ImageDocument
+from bisheng_unstructured.documents.pdf_parser.idp.pdf import PDFDocument as IDP_PDFDocument
 from bisheng_unstructured.documents.pdf_parser.image import ImageDocument
 from bisheng_unstructured.documents.pdf_parser.pdf import PDFDocument
-from bisheng_unstructured.documents.pdf_parser.idp.pdf import PDFDocument as IDP_PDFDocument
-from bisheng_unstructured.documents.pdf_parser.idp.image import ImageDocument as IDP_ImageDocument
 from bisheng_unstructured.partition.csv import partition_csv
 from bisheng_unstructured.partition.doc import partition_doc
 from bisheng_unstructured.partition.docx import partition_docx
@@ -17,32 +21,29 @@ from bisheng_unstructured.partition.ppt import partition_ppt
 from bisheng_unstructured.partition.pptx import partition_pptx
 from bisheng_unstructured.partition.text import partition_text
 from bisheng_unstructured.partition.tsv import partition_tsv
+from bisheng_unstructured.partition.xls import partition_xls
 from bisheng_unstructured.partition.xlsx import partition_xlsx
 from bisheng_unstructured.staging.base import convert_to_isd
-
-from bisheng_unstructured.api.any2pdf import Any2PdfCreator
-from bisheng_unstructured.api.types import UnstructuredInput, UnstructuredOutput
-from bisheng_unstructured.documents.elements import ElementMetadata, NarrativeText
-from bisheng_unstructured.documents.pdf_parser.blob import Blob
-from bisheng_unstructured.partition.xls import partition_xls
 
 
 def partition_pdf(filename, model_params, **kwargs):
     if kwargs.get("mode") == "local":
         # pypdf 进行解析
         import pypdf
+
         blob = Blob.from_path(filename)
         with blob.as_bytes_io() as pdf_file_obj:
             reader = pypdf.PdfReader(pdf_file_obj)
             # 遍历每一页
             return [
-                NarrativeText(text=page.extract_text(),
-                              metadata=ElementMetadata(page_number=page_num))
+                NarrativeText(
+                    text=page.extract_text(), metadata=ElementMetadata(page_number=page_num)
+                )
                 for page_num, page in enumerate(reader.pages)
             ]
     else:
         rt_type = kwargs.get("rt_type", "sdk")
-        if rt_type in {"sdk", "idp"}:
+        if rt_type in {"ocr_sdk", "idp"}:
             doc = IDP_PDFDocument(file=filename, model_params=model_params, **kwargs)
         else:
             doc = PDFDocument(file=filename, model_params=model_params, **kwargs)
@@ -53,7 +54,7 @@ def partition_pdf(filename, model_params, **kwargs):
 
 def partition_image(filename, model_params, **kwargs):
     rt_type = kwargs.get("rt_type", "sdk")
-    if rt_type in {"sdk", "idp"}:
+    if rt_type in {"ocr_sdk", "idp"}:
         doc = IDP_ImageDocument(file=filename, model_params=model_params, **kwargs)
     else:
         doc = ImageDocument(file=filename, model_params=model_params, **kwargs)
@@ -85,27 +86,25 @@ PARTITION_MAP = {
 
 
 class Pipeline(object):
-
     def __init__(self, settings: Dict):
         """k8s 使用cm 创建环境变量"""
         tmp_dict = settings
-        rt_ep = os.getenv("rt_server")
-        self.rt_type = os.getenv("rt_type", "rt")
+        rt_ep = os.getenv("server_address")
+        self.rt_type = os.getenv("server_type", "rt")
         if rt_ep:
-            if self.rt_type in {"sdk", "idp"}:
+            if self.rt_type in {"ocr_sdk", "idp"}:
                 pdf_model_params_temp = {
                     "layout_ep": f"http://{rt_ep}/v2/idp/idp_app/infer",
                     "cell_model_ep": f"http://{rt_ep}/v2/idp/idp_app/infer",
                     "rowcol_model_ep": f"http://{rt_ep}/v2/idp/idp_app/infer",
                     "table_model_ep": f"http://{rt_ep}/v2/idp/idp_app/infer",
-                    "ocr_model_ep": f"http://{rt_ep}/v2/idp/idp_app/infer"
+                    "ocr_model_ep": f"http://{rt_ep}/v2/idp/idp_app/infer",
                 }
             else:
                 pdf_model_params_temp = {
                     "layout_ep": f"http://{rt_ep}/v2.1/models/elem_layout_v1/infer",
                     "cell_model_ep": f"http://{rt_ep}/v2.1/models/elem_table_cell_detect_v1/infer",
-                    "rowcol_model_ep":
-                    f"http://{rt_ep}/v2.1/models/elem_table_rowcol_detect_v1/infer",
+                    "rowcol_model_ep": f"http://{rt_ep}/v2.1/models/elem_table_rowcol_detect_v1/infer",
                     "table_model_ep": f"http://{rt_ep}/v2.1/models/elem_table_detect_v1/infer",
                     "ocr_model_ep": f"http://{rt_ep}/v2.1/models/elem_ocr_collection_v3/infer",
                 }
@@ -137,7 +136,6 @@ class Pipeline(object):
             return UnstructuredOutput(status_code=400, status_message=str(e))
 
     def predict(self, inp: UnstructuredInput) -> UnstructuredOutput:
-
         if inp.file_type not in PARTITION_MAP:
             raise Exception(f"file type[{inp.file_type}] not supported")
 
@@ -150,11 +148,11 @@ class Pipeline(object):
         part_inp = {
             "filename": filename,
             "mode": self.mode,
-            'rt_type': self.rt_type,
-            **inp.parameters
+            "rt_type": self.rt_type,
+            **inp.parameters,
         }
         part_func = PARTITION_MAP.get(file_type)
-        if part_func == partition_image and self.mode == 'local':
+        if part_func == partition_image and self.mode == "local":
             return UnstructuredOutput(status_code=400, status_message="本地模型不支持图片")
 
         if part_func == partition_pdf or part_func == partition_image:

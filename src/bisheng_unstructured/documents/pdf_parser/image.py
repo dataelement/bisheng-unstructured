@@ -2,31 +2,39 @@ import base64
 from typing import List
 
 from bisheng_unstructured.documents.base import Page
-from bisheng_unstructured.models import (LayoutAgent, OCRAgent, TableAgent, TableDetAgent,
-                                         RTLayoutAgent, RTOCRAgent, RTTableAgent, RTTableDetAgent)
-
 from bisheng_unstructured.documents.pdf_parser.blob import Blob
 from bisheng_unstructured.documents.pdf_parser.pdf import PDFDocument
+from bisheng_unstructured.models import (
+    LayoutAgent,
+    OCRAgent,
+    RTLayoutAgent,
+    RTOCRAgent,
+    RTTableAgent,
+    RTTableDetAgent,
+    TableAgent,
+    TableDetAgent,
+)
 
 # from bisheng_unstructured.common import Timer
 
 
 class ImageDocument(PDFDocument):
-
-    def __init__(self,
-                 file: str,
-                 model_params: dict,
-                 with_columns: bool = False,
-                 text_elem_sep: str = "\n",
-                 enhance_table: bool = True,
-                 keep_text_in_image: bool = True,
-                 lang: str = "zh",
-                 verbose: bool = False,
-                 n_parallel: int = 10,
-                 **kwargs) -> None:
+    def __init__(
+        self,
+        file: str,
+        model_params: dict,
+        with_columns: bool = False,
+        text_elem_sep: str = "\n",
+        enhance_table: bool = True,
+        keep_text_in_image: bool = True,
+        lang: str = "zh",
+        verbose: bool = False,
+        n_parallel: int = 10,
+        **kwargs
+    ) -> None:
         super(ImageDocument, self).__init__(file=file, model_params=model_params)
         rt_type = kwargs.get("rt_type", "sdk")
-        if rt_type in {"sdk", "idp"}:
+        if rt_type in {"ocr_sdk", "idp"}:
             self.layout_agent = LayoutAgent(**model_params)
             self.table_agent = TableAgent(**model_params)
             self.ocr_agent = OCRAgent(**model_params)
