@@ -3,3 +3,4 @@ sftp-config.json
 .isort.cfg
 .idea/
 .DS_Store
+__pycache__
