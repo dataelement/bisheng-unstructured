@@ -76,13 +76,16 @@ steps: # 定义流水线执行步骤，这些步骤将顺序执行
     commands:
       - docker login -u $cr_user -p $cr_password $cr_repo_host  # 登录官方镜像源
       - docker login -u $docker_user -p $docker_password  # 登录私有镜像源
-      - docker buildx create --name multi_os_builder
-      - docker buildx build --builder multi_os_builder --platform linux/amd64,linux/arm64 -t $docker_repo:$version -t $cr_repo_host/$docker_repo:$version --push -f ./docker/Dockerfile .  # build image
+      - docker buildx create --name multi_os_arch
+      # 推送两个架构的镜像到dockerhub
+      - docker buildx build --builder multi_os_arch --platform linux/amd64,linux/arm64 -t $docker_repo:$version --push -f ./docker/Dockerfile .  # build image
+      # 推送amd的镜像到cr镜像仓库
+      - docker buildx build --builder multi_os_arch --platform linux/amd64 -t $cr_repo_host/$docker_repo:$version --load -f ./docker/Dockerfile .
       # - dokcer tag $docker_repo:$version $docker_repo:latest
       # - docker tag $docker_repo:$version $cr_repo_host/$docker_repo:$version
       # - docker tag $docker_repo:$version $cr_repo_host/$docker_repo:latest
       - docker push $cr_repo_host/$docker_repo:$version
-      - docker push $docker_repo:$version
+      # - docker push $docker_repo:$version
       # - docker push $docker_repo:latest
       # - docker push $cr_repo_host/$docker_repo:latest
     when:
