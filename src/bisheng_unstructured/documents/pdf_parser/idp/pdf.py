@@ -330,7 +330,7 @@ class PDFDocument(Document):
                 line_text = "".join([char["c"] for span in line["spans"] for char in span["chars"]])
                 bb0, bb1, bb2, bb3 = merge_rects(np.asarray(words_bboxes))
 
-                block_info = BlockInfo([bb0, bb1, bb2, bb3], line_text, block_no, block_type)
+                block_info = BlockInfo([bb0, bb1, bb2, bb3], line_text, block_no, block_type,rs=[bb0,bb1,bb2,bb3],ts=[line_text])
                 line_blocks.append(block_info)
 
         return line_blocks, line_words_info
@@ -406,9 +406,9 @@ class PDFDocument(Document):
                     is_scan = self.is_scan 
 
                     if not is_scan:
-                        textpage_info = self._extract_lines_v2(textpage)
+                        textpage_info,_ = self._extract_lines_v2(textpage)
                     else:
-                        textpage_info = (None, None)
+                        textpage_info = []
 
 
                     futures.append(
