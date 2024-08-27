@@ -403,7 +403,8 @@ class PDFDocument(Document):
                     bytes_img = bytes_imgs[idx - start]
                     img = page_imgs[idx - start]
 
-                    is_scan = self.is_scan 
+                    if self.is_scan is not None:
+                        is_scan = self.is_scan
 
                     if not is_scan:
                         textpage_info,_ = self._extract_lines_v2(textpage)
