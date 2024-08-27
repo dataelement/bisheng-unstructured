@@ -189,7 +189,7 @@ class PDFDocument(Document):
         self.support_formula = support_formula
         self.enable_isolated_formula = enable_isolated_formula
         self.n_parallel = n_parallel
-        self.is_scan = kwargs.get("is_scan", False) 
+        self.is_scan = is_scan
         super().__init__()
 
     def _get_image_blobs(self, fitz_doc, pdf_reader, n=None, start=0):
