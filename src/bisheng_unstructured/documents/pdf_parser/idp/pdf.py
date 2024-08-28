@@ -160,7 +160,7 @@ class PDFDocument(Document):
         password: Optional[Union[str, bytes]] = None,
         is_join_table: bool = True,
         with_columns: bool = False,
-        is_scan: bool = False,
+        is_scan: Optional[bool] = None,
         support_rotate: bool = False,
         text_elem_sep: str = "\n",
         start: int = 0,
@@ -402,6 +402,7 @@ class PDFDocument(Document):
                     rot_matrix = None
                     bytes_img = bytes_imgs[idx - start]
                     img = page_imgs[idx - start]
+
 
                     if self.is_scan is not None:
                         is_scan = self.is_scan
