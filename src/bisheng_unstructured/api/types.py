@@ -11,6 +11,7 @@ class UnstructuredInput(BaseModel):
     mode: str = "text"  # text, partition, vis, topdf
     file_path: Optional[str] = None
     file_type: Optional[str] = None
+    is_scan: Optional[bool] = None
 
 
 class UnstructuredOutput(BaseModel):
