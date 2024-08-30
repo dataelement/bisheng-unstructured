@@ -6,7 +6,6 @@ import requests
 from PIL import Image
 
 from bisheng_unstructured.config.settings import settings
-
 from bisheng_unstructured.models.common import (
     bbox_overlap,
     draw_polygon,
@@ -30,21 +29,21 @@ DEFAULT_CONFIG = {
     },
     "scene_mapping": {
         "print": {
-            "det": "general_text_det_mrcnn_v2.0",
-            "recog": "transformer-blank-v0.2-faster",
+            "det": "general_text_det_v2.0",
+            "recog": "general_text_reg_nb_v1.0_faster",
         },
         "hand": {
-            "det": "general_text_det_mrcnn_v2.0",
-            "recog": "transformer-hand-v1.16-faster",
+            "det": "general_text_det_v2.0",
+            "recog": "general_text_reg_nb_v1.0_faster",
         },
         "print_recog": {
-            "recog": "transformer-blank-v0.2-faster",
+            "recog": "general_text_reg_nb_v1.0_faster",
         },
         "hand_recog": {
-            "recog": "transformer-hand-v1.16-faster",
+            "recog": "general_text_reg_nb_v1.0_faster",
         },
         "det": {
-            "det": "general_text_det_mrcnn_v2.0",
+            "det": "general_text_det_v2.0",
         },
     },
 }
@@ -53,7 +52,6 @@ DEFAULT_CONFIG = {
 # OCR Agent Version 0.1, update at 2023.08.18
 #  - add predict_with_mask support recog with embedding formula, 2024.01.16
 class OCRAgent(object):
-
     def __init__(self, **kwargs):
         self.ep = kwargs.get("ocr_model_ep")
         self.client = requests.Session()
@@ -118,10 +116,8 @@ class OCRAgent(object):
 
                 xmin, ymin = max(0, int(box[0][0]) - 1), max(0, int(box[0][1]) - 1)
                 xmax, ymax = (
-                    min(img0.size[0],
-                        int(box[2][0]) + 1),
-                    min(img0.size[1],
-                        int(box[2][1]) + 1),
+                    min(img0.size[0], int(box[2][0]) + 1),
+                    min(img0.size[1], int(box[2][1]) + 1),
                 )
                 img[ymin:ymax, xmin:xmax, :] = 255
 
@@ -151,11 +147,13 @@ class OCRAgent(object):
                     emb_bbox = [bb[0], bb[1], bb[4], bb[5]]
                     bbox_iou = bbox_overlap(hori_bbox, emb_bbox)
                     if bbox_iou > EMB_BBOX_THREHOLD:
-                        embed_mfs.append({
-                            "position": emb_bbox,
-                            "text": box_info["text"],
-                            "type": box_info["type"],
-                        })
+                        embed_mfs.append(
+                            {
+                                "position": emb_bbox,
+                                "text": box_info["text"],
+                                "type": box_info["type"],
+                            }
+                        )
 
             ocr_boxes = split_line_image(hori_bbox, embed_mfs)
             text_bboxes.extend(ocr_boxes)
