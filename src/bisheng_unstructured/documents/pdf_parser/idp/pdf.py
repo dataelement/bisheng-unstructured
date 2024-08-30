@@ -160,6 +160,7 @@ class PDFDocument(Document):
         password: Optional[Union[str, bytes]] = None,
         is_join_table: bool = True,
         with_columns: bool = False,
+        is_scan: Optional[bool] = None,
         support_rotate: bool = False,
         text_elem_sep: str = "\n",
         start: int = 0,
@@ -188,6 +189,7 @@ class PDFDocument(Document):
         self.support_formula = support_formula
         self.enable_isolated_formula = enable_isolated_formula
         self.n_parallel = n_parallel
+        self.is_scan = is_scan
         super().__init__()
 
     def _get_image_blobs(self, fitz_doc, pdf_reader, n=None, start=0):
@@ -276,6 +278,63 @@ class PDFDocument(Document):
 
         return pages
 
+    def _extract_lines_v2(self, textpage):
+        line_blocks = []
+        line_words_info = []
+        page_dict = textpage.extractRAWDICT()
+        for block in page_dict["blocks"]:
+            block_type = block["type"]
+            block_no = block["number"]
+            if block_type != 0:
+                bbox = block["bbox"]
+                block_text = ""
+                block_info = BlockInfo(
+                    [bbox[0], bbox[1], bbox[2], bbox[3]], block_text, block_no, block_type
+                )
+                line_blocks.append(block_info)
+                line_words_info.append((None, None))
+
+            lines = block["lines"]
+
+            for line in lines:
+                bbox = line["bbox"]
+                words = []
+                words_bboxes = []
+                for span in line["spans"]:
+                    cont_bboxes = []
+                    cont_text = []
+                    for char in span["chars"]:
+                        c = char["c"]
+                        if c == " ":
+                            if cont_bboxes:
+                                word_bbox = merge_rects(np.asarray(cont_bboxes))
+                                word = "".join(cont_text)
+                                words.append(word)
+                                words_bboxes.append(word_bbox)
+                                cont_bboxes = []
+                                cont_text = []
+                        else:
+                            cont_bboxes.append(char["bbox"])
+                            cont_text.append(c)
+
+                    if cont_bboxes:
+                        word_bbox = merge_rects(np.asarray(cont_bboxes))
+                        word = "".join(cont_text)
+                        words.append(word)
+                        words_bboxes.append(word_bbox)
+
+                if not words_bboxes:
+                    continue
+
+                line_words_info.append((words, words_bboxes))
+                line_text = "".join([char["c"] for span in line["spans"] for char in span["chars"]])
+                bb0, bb1, bb2, bb3 = merge_rects(np.asarray(words_bboxes))
+
+                block_info = BlockInfo([bb0, bb1, bb2, bb3], line_text, block_no, block_type,rs=[bb0,bb1,bb2,bb3],ts=[line_text])
+                line_blocks.append(block_info)
+
+        return line_blocks, line_words_info
+
     def load(self) -> List[Page]:
         """Load given path as pages."""
         blob = Blob.from_path(self.file)
@@ -284,7 +343,10 @@ class PDFDocument(Document):
         page_inds = []
         lang = None
 
-        def _task(bytes_img, img, is_scan, lang, rot_matirx):
+        def _task(textpage_info,bytes_img, img, is_scan, lang, rot_matirx):
+            if not is_scan:
+                return textpage_info
+
             b64_data = base64.b64encode(bytes_img).decode()
             payload = {"b64_image": b64_data}
             result = self.ocr_agent.predict(payload)
@@ -340,8 +402,19 @@ class PDFDocument(Document):
                     rot_matrix = None
                     bytes_img = bytes_imgs[idx - start]
                     img = page_imgs[idx - start]
+
+
+                    if self.is_scan is not None:
+                        is_scan = self.is_scan
+
+                    if not is_scan:
+                        textpage_info,_ = self._extract_lines_v2(textpage)
+                    else:
+                        textpage_info = []
+
+
                     futures.append(
-                        executor.submit(_task, bytes_img, img, is_scan, lang, rot_matrix))
+                        executor.submit(_task,textpage_info, bytes_img, img, is_scan, lang, rot_matrix))
 
                 idx = start
                 for future in futures:

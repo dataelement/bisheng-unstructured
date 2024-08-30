@@ -149,6 +149,7 @@ class Pipeline(object):
             "filename": filename,
             "mode": self.mode,
             "rt_type": self.rt_type,
+            "is_scan": inp.is_scan,
             **inp.parameters,
         }
         part_func = PARTITION_MAP.get(file_type)
