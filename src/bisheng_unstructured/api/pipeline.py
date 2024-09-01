@@ -9,7 +9,6 @@ from bisheng_unstructured.documents.elements import ElementMetadata, NarrativeTe
 from bisheng_unstructured.documents.html_utils import save_to_txt, visualize_html
 from bisheng_unstructured.documents.pdf_parser.blob import Blob
 from bisheng_unstructured.documents.pdf_parser.idp.image import ImageDocument as IDP_ImageDocument
-from bisheng_unstructured.documents.pdf_parser.idp.pdf import PDFDocument as IDP_PDFDocument
 from bisheng_unstructured.documents.pdf_parser.image import ImageDocument
 from bisheng_unstructured.documents.pdf_parser.pdf import PDFDocument
 from bisheng_unstructured.partition.csv import partition_csv
@@ -36,17 +35,16 @@ def partition_pdf(filename, model_params, **kwargs):
             reader = pypdf.PdfReader(pdf_file_obj)
             # 遍历每一页
             return [
-                NarrativeText(
-                    text=page.extract_text(), metadata=ElementMetadata(page_number=page_num)
-                )
+                NarrativeText(text=page.extract_text(),
+                              metadata=ElementMetadata(page_number=page_num))
                 for page_num, page in enumerate(reader.pages)
             ]
     else:
         rt_type = kwargs.get("rt_type", "sdk")
-        if rt_type in {"ocr_sdk", "idp"}:
-            doc = IDP_PDFDocument(file=filename, model_params=model_params, **kwargs)
-        else:
-            doc = PDFDocument(file=filename, model_params=model_params, **kwargs)
+        # if rt_type in {"ocr_sdk", "idp"}:
+        #     doc = IDP_PDFDocument(file=filename, model_params=model_params, **kwargs)
+        # else:
+        doc = PDFDocument(file=filename, model_params=model_params, **kwargs)
 
         _ = doc.pages
         return doc.elements
@@ -86,6 +84,7 @@ PARTITION_MAP = {
 
 
 class Pipeline(object):
+
     def __init__(self, settings: Dict):
         """k8s 使用cm 创建环境变量"""
         tmp_dict = settings
@@ -94,17 +93,18 @@ class Pipeline(object):
         if rt_ep:
             if self.rt_type in {"ocr_sdk", "idp"}:
                 pdf_model_params_temp = {
-                    "layout_ep": f"http://{rt_ep}/v2/idp/idp_app/infer",
-                    "cell_model_ep": f"http://{rt_ep}/v2/idp/idp_app/infer",
-                    "rowcol_model_ep": f"http://{rt_ep}/v2/idp/idp_app/infer",
-                    "table_model_ep": f"http://{rt_ep}/v2/idp/idp_app/infer",
+                    "layout_ep": f"http://{rt_ep}/v2/idp/elem_layout_v1/infer",
+                    "cell_model_ep": f"http://{rt_ep}/v2/idp/elem_table_cell_detect_v1/infer",
+                    "rowcol_model_ep": f"http://{rt_ep}/v2/idp/elem_table_rowcol_detect_v1/infer",
+                    "table_model_ep": f"http://{rt_ep}/v2/idp/elem_table_detect_v1/infer",
                     "ocr_model_ep": f"http://{rt_ep}/v2/idp/idp_app/infer",
                 }
             else:
                 pdf_model_params_temp = {
                     "layout_ep": f"http://{rt_ep}/v2.1/models/elem_layout_v1/infer",
                     "cell_model_ep": f"http://{rt_ep}/v2.1/models/elem_table_cell_detect_v1/infer",
-                    "rowcol_model_ep": f"http://{rt_ep}/v2.1/models/elem_table_rowcol_detect_v1/infer",
+                    "rowcol_model_ep":
+                    f"http://{rt_ep}/v2.1/models/elem_table_rowcol_detect_v1/infer",
                     "table_model_ep": f"http://{rt_ep}/v2.1/models/elem_table_detect_v1/infer",
                     "ocr_model_ep": f"http://{rt_ep}/v2.1/models/elem_ocr_collection_v3/infer",
                 }
