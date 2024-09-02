@@ -91,7 +91,7 @@ class Pipeline(object):
         rt_ep = os.getenv("server_address")
         self.rt_type = os.getenv("server_type", "rt")
         if rt_ep:
-            if self.rt_type in {"ocr_sdk", "idp"}:
+            if self.rt_type in {"ocr_sdk", "idp", "sdk"}:
                 pdf_model_params_temp = {
                     "layout_ep": f"http://{rt_ep}/v2/idp/elem_layout_v1/infer",
                     "cell_model_ep": f"http://{rt_ep}/v2/idp/elem_table_cell_detect_v1/infer",
