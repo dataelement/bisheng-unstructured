@@ -4,7 +4,6 @@ import os
 import requests
 
 from bisheng_unstructured.models.common import (load_json)
-from bisheng_unstructured.models.idp.dummy_ocr_agent import BlockInfo, process_whole_paragraph
 
 DEFAULT_CONFIG = {
     "params": {
@@ -20,17 +19,17 @@ DEFAULT_CONFIG = {
             "recog": "general_text_reg_nb_v1.0_faster",
         },
         "hand": {
-            "det": "general_text_det_mrcnn_v2.0",
-            "recog": "transformer-hand-v1.16-faster",
+            "det": "general_text_det_v2.0",
+            "recog": "general_text_reg_nb_v1.0_faster",
         },
         "print_recog": {
-            "recog": "transformer-blank-v0.2-faster",
+            "recog": "general_text_reg_nb_v1.0_faster",
         },
         "hand_recog": {
-            "recog": "transformer-hand-v1.16-faster",
+            "recog": "general_text_reg_nb_v1.0_faster",
         },
         "det": {
-            "det": "general_text_det_mrcnn_v2.0",
+            "det": "general_text_det_v2.0",
         },
     }
 }
@@ -83,19 +82,8 @@ class OCRAgent(object):
         req_data = {"param": params, "data": [b64_image]}
 
         try:
-            r = self.client.post(url=self.ep, json=req_data, timeout=self.timeout).json()
-            # ret = convert_json(r.json())
-
-            layout_text, layout_boxs = process_whole_paragraph(r["result"]['ocr_result'])
-            b0 = BlockInfo(
-                bbox=[],
-                block_text=''.join([''.join(text) for text in layout_text]),
-                block_no=0,
-                ts=[''.join(text) for text in layout_text],
-                rs=[text[0] for text in layout_boxs],
-                layout_type=0,
-            )
-            return [b0]
+            r = self.client.post(url=self.ep, json=req_data, timeout=self.timeout)
+            return r.json()
             # return r.json()
         except requests.exceptions.Timeout:
             raise Exception(f"timeout in ocr predict")
