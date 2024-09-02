@@ -1175,7 +1175,7 @@ class PDFDocument(Document):
                 bytes_imgs.append(bytes_img)
 
             timer.toc()
-            logger.info("pdfium render image ", timer.get())
+            logger.info("pdfium render image size={} time={}", len(page_imgs), timer.get())
 
             results = []
             with ThreadPoolExecutor(max_workers=self.n_parallel) as executor:

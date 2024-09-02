@@ -82,6 +82,8 @@ class OCRAgent(object):
         req_data = {"param": params, "data": [b64_image]}
 
         try:
+            from loguru import logger
+            logger.info(f"ocr predict request: {params}")
             r = self.client.post(url=self.ep, json=req_data, timeout=self.timeout)
             return r.json()
             # return r.json()

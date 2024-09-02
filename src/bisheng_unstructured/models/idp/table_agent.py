@@ -3,6 +3,7 @@ import json
 
 import numpy as np
 import tritonclient.http as httpclient
+from loguru import logger
 
 
 # Table Agent Version 0.1, update at 2023.08.31
@@ -47,6 +48,7 @@ class TableAgent(object):
         inputs[0].set_data_from_numpy(input0_data)
         outputs = [httpclient.InferRequestedOutput("OUTPUT")]
         try:
+            logger.info("table predict request, model: {}", model)
             response = client.infer(model, inputs, request_id=str(1), outputs=outputs)
             print("response", response)
             output_data = json.loads(response.as_numpy("OUTPUT")[0].decode("utf-8"))
