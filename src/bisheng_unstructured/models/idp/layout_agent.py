@@ -1,7 +1,6 @@
 import json
 import numpy as np
 import tritonclient.http as httpclient
-from loguru import logger
 
 
 # Layout Agent Version 0.1, update at 2023.08.18
@@ -24,7 +23,6 @@ class LayoutAgent(object):
         inputs[0].set_data_from_numpy(input0_data)
         outputs = [httpclient.InferRequestedOutput("OUTPUT")]
         try:
-            logger.info("layout predict model={}", self.model)
             response = self.client.infer(self.model, inputs, request_id=str(1), outputs=outputs)
             output_data = json.loads(response.as_numpy("OUTPUT")[0].decode("utf-8"))
         except Exception as e:

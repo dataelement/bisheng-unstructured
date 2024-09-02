@@ -4,7 +4,7 @@ import io
 import json
 import re
 from collections import Counter
-from concurrent.futures import ThreadPoolExecutor
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from copy import deepcopy
 from dataclasses import dataclass
 from typing import Any, List, Optional, Union
@@ -1134,6 +1134,8 @@ class PDFDocument(Document):
             b64_data = base64.b64encode(bytes_img).decode()
             layout_inp = {"b64_image": b64_data}
             layout = self.layout_agent.predict(layout_inp)
+            logger.info("load_layout_result_begin is_scan={} support={}", is_scan,
+                        self.support_formula)
             blocks = self._allocate_semantic(textpage_info, layout, b64_data, img, is_scan, lang,
                                              rot_matrix)
             return blocks
@@ -1204,17 +1206,18 @@ class PDFDocument(Document):
                         textpage_info = (None, None)
 
                     # blocks = _task(textpage_info, bytes_img, img, is_scan, lang, rot_matrix)
-
+                    import time
+                    time.sleep(1)
                     futures.append(
                         executor.submit(_task, textpage_info, bytes_img, img, is_scan, lang,
                                         rot_matrix))
 
                 idx = start
-                for future in futures:
+                for future in as_completed(futures):
                     blocks = future.result()
                     if not blocks:
                         continue
-
+                    logger.info("load_layout_result_end idx={} time={}", idx, timer.get())
                     if self.with_columns:
                         sub_groups = self._divide_blocks_into_groups(blocks)
                         groups.extend(sub_groups)
