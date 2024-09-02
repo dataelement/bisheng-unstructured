@@ -75,3 +75,4 @@ xlrd==2.0.1
 uvicorn
 fastapi
 orjson
+tritonclient[http]==2.41.0
