@@ -67,12 +67,16 @@ class TableAgent(object):
         ep_parts = kwargs.get("cell_model_ep").split("/")
         server_url = ep_parts[2]
         self.cell_model = ep_parts[-2]
-        self.cell_client = httpclient.InferenceServerClient(url=server_url, verbose=False)
+        self.cell_client = httpclient.InferenceServerClient(
+            url=server_url, concurrency=20, verbose=False
+        )
 
         ep_parts = kwargs.get("rowcol_model_ep").split("/")
         server_url = ep_parts[2]
         self.rowcol_model = ep_parts[-2]
-        self.rowcol_client = httpclient.InferenceServerClient(url=server_url, verbose=False)
+        self.rowcol_client = httpclient.InferenceServerClient(
+            url=server_url, concurrency=20, verbose=False
+        )
 
         self.timeout = kwargs.get("timeout", 60)
         self.params = {
@@ -116,7 +120,9 @@ class TableDetAgent(object):
         ep_parts = kwargs.get("table_model_ep").split("/")
         server_url = ep_parts[2]
         self.model = ep_parts[-2]
-        self.client = httpclient.InferenceServerClient(url=server_url, verbose=False)
+        self.client = httpclient.InferenceServerClient(
+            url=server_url, concurrency=20, verbose=False
+        )
         self.timeout = kwargs.get("timeout", 60)
 
     def predict(self, inp):

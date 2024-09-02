@@ -35,7 +35,9 @@ class LayoutAgent:
         ep_parts = kwargs.get("layout_ep").split("/")
         self.model = ep_parts[-2]
         server_url = ep_parts[2]
-        self.client = httpclient.InferenceServerClient(url=server_url, verbose=False)
+        self.client = httpclient.InferenceServerClient(
+            url=server_url, concurrency=20, verbose=False
+        )
 
     def predict(self, inp):
         # b64_image = base64.b64encode(open(image_file, 'rb').read()).decode('utf-8')
