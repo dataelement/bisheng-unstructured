@@ -262,6 +262,7 @@ class PDFDocument(Document):
         is_join_table: bool = True,
         with_columns: bool = False,
         support_rotate: bool = False,
+        is_scan: Optional[bool] = None,
         text_elem_sep: str = "\n",
         start: int = 0,
         n: int = None,
@@ -301,6 +302,7 @@ class PDFDocument(Document):
         self.support_formula = support_formula
         self.enable_isolated_formula = enable_isolated_formula
         self.n_parallel = n_parallel
+        self.is_scan = is_scan
         self.mode = kwargs.get("mode", "local")
         super().__init__()
 
@@ -1199,6 +1201,10 @@ class PDFDocument(Document):
                     bytes_img = bytes_imgs[idx - start]
                     img = page_imgs[idx - start]
                     # print('pil image png convert', timer.get())
+
+                    if self.is_scan is not None:
+                        is_scan = self.is_scan
+
 
                     if not is_scan:
                         textpage_info = self._extract_lines_v2(textpage)
