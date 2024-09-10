@@ -118,7 +118,7 @@ async def etl4_llm(inp: UnstructuredInput):
 
         timer.toc()
         outp = pipeline.predict(inp)
-        if inp.mode == "partition":
+        if inp.mode == "partition" and outp.status_code == 200:
             with open(file_path, "rb") as fin:
                 outp.b64_pdf = base64.b64encode(fin.read()).decode("utf-8")
 
