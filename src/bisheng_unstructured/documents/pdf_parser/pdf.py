@@ -33,19 +33,18 @@ from bisheng_unstructured.documents.markdown import (
     transform_html_table_to_md,
     transform_list_to_table,
 )
+from bisheng_unstructured.documents.pdf_parser.blob import Blob
 from bisheng_unstructured.models import (
     FormulaAgent,
     LayoutAgent,
     OCRAgent,
-    TableAgent,
-    TableDetAgent,
     RTLayoutAgent,
     RTOCRAgent,
     RTTableAgent,
     RTTableDetAgent,
+    TableAgent,
+    TableDetAgent,
 )
-
-from bisheng_unstructured.documents.pdf_parser.blob import Blob
 
 ZH_CHAR = re.compile("[\u4e00-\u9fa5]")
 ENG_WORD = re.compile(pattern=r"^[a-zA-Z0-9?><;,{}[\]\-_+=!@#$%\^&*|']*$", flags=re.DOTALL)
@@ -169,7 +168,6 @@ class BlockInfo:
 
 
 class Segment:
-
     def __init__(self, seg):
         self.whole = seg
         self.segs = []
@@ -340,8 +338,9 @@ class PDFDocument(Document):
             if block_type != 0:
                 bbox = block["bbox"]
                 block_text = ""
-                block_info = BlockInfo([bbox[0], bbox[1], bbox[2], bbox[3]], block_text, block_no,
-                                       block_type)
+                block_info = BlockInfo(
+                    [bbox[0], bbox[1], bbox[2], bbox[3]], block_text, block_no, block_type
+                )
                 line_blocks.append(block_info)
                 line_words_info.append((None, None))
 
@@ -378,8 +377,7 @@ class PDFDocument(Document):
                     continue
 
                 line_words_info.append((words, words_bboxes))
-                line_text = "".join(
-                    [char["c"] for span in line["spans"] for char in span["chars"]])
+                line_text = "".join([char["c"] for span in line["spans"] for char in span["chars"]])
                 bb0, bb1, bb2, bb3 = merge_rects(np.asarray(words_bboxes))
 
                 block_info = BlockInfo([bb0, bb1, bb2, bb3], line_text, block_no, block_type)
@@ -397,8 +395,9 @@ class PDFDocument(Document):
             if block_type != 0:
                 bbox = block["bbox"]
                 block_text = ""
-                block_info = BlockInfo([bbox[0], bbox[1], bbox[2], bbox[3]], block_text, block_no,
-                                       block_type)
+                block_info = BlockInfo(
+                    [bbox[0], bbox[1], bbox[2], bbox[3]], block_text, block_no, block_type
+                )
                 line_blocks.append(block_info)
                 line_words_info.append((None, None))
 
@@ -413,8 +412,9 @@ class PDFDocument(Document):
                 line_words_info.append((words, words_bbox))
 
                 line_text = "".join([span["text"] for span in line["spans"]])
-                block_info = BlockInfo([bbox[0], bbox[1], bbox[2], bbox[3]], line_text, block_no,
-                                       block_type)
+                block_info = BlockInfo(
+                    [bbox[0], bbox[1], bbox[2], bbox[3]], line_text, block_no, block_type
+                )
                 line_blocks.append(block_info)
 
         return line_blocks, line_words_info
@@ -471,7 +471,8 @@ class PDFDocument(Document):
             # step 6. merge the segmented line patches and sort by tlbr
             inp = {"b64_image": b64_image}
             mf_outs = self.formula_agent.predict(
-                inp, img, enable_isolated_formula=self.enable_isolated_formula)
+                inp, img, enable_isolated_formula=self.enable_isolated_formula
+            )
             texts, bboxes, words_info = self.ocr_agent.predict_with_mask(img, mf_outs)
         else:
             # get general ocr result
@@ -558,14 +559,9 @@ class PDFDocument(Document):
         else:
             return textpage_info
 
-    def _allocate_semantic(self,
-                           textpage_info,
-                           layout,
-                           b64_image,
-                           img,
-                           is_scan=True,
-                           lang="zh",
-                           rot_matrix=None):
+    def _allocate_semantic(
+        self, textpage_info, layout, b64_image, img, is_scan=True, lang="zh", rot_matrix=None
+    ):
         class_name = ["印章", "图片", "标题", "段落", "表格", "页眉", "页码", "页脚"]
         effective_class_inds = [3, 4, 5, 999, 1000]
         non_conti_class_ids = [6, 7, 8]
@@ -725,8 +721,10 @@ class PDFDocument(Document):
                 ord_ind = np.min(ori_orders)
                 mask[ind] = 1
                 new_block_info.append(
-                    BlockInfo([rect[0], rect[1], rect[2], rect[3]], "", -1, -1, ts, rs, ind,
-                              ord_ind))
+                    BlockInfo(
+                        [rect[0], rect[1], rect[2], rect[3]], "", -1, -1, ts, rs, ind, ord_ind
+                    )
+                )
                 max_block_type = np.max([blocks[i].block_type for i in ind])
                 if max_block_type == FORMULA_ID:
                     new_block_info[-1].layout_type = FORMULA_ID
@@ -748,8 +746,10 @@ class PDFDocument(Document):
                 mask[start:end] = 1
 
                 new_block_info.append(
-                    BlockInfo([rect[0], rect[1], rect[2], rect[3]], "", -1, -1, ts, rs, pos,
-                              ord_ind))
+                    BlockInfo(
+                        [rect[0], rect[1], rect[2], rect[3]], "", -1, -1, ts, rs, pos, ord_ind
+                    )
+                )
 
                 max_block_type = np.max([blocks[i].block_type for i in pos])
                 if max_block_type == FORMULA_ID:
@@ -1136,10 +1136,12 @@ class PDFDocument(Document):
             b64_data = base64.b64encode(bytes_img).decode()
             layout_inp = {"b64_image": b64_data}
             layout = self.layout_agent.predict(layout_inp)
-            logger.info("load_layout_result_begin is_scan={} support={}", is_scan,
-                        self.support_formula)
-            blocks = self._allocate_semantic(textpage_info, layout, b64_data, img, is_scan, lang,
-                                             rot_matrix)
+            logger.info(
+                "load_layout_result_begin is_scan={} support={}", is_scan, self.support_formula
+            )
+            blocks = self._allocate_semantic(
+                textpage_info, layout, b64_data, img, is_scan, lang, rot_matrix
+            )
             return blocks
 
         with blob.as_bytes_io() as file_path:
@@ -1205,18 +1207,17 @@ class PDFDocument(Document):
                     if self.is_scan is not None:
                         is_scan = self.is_scan
 
-
                     if not is_scan:
                         textpage_info = self._extract_lines_v2(textpage)
                     else:
                         textpage_info = (None, None)
 
                     # blocks = _task(textpage_info, bytes_img, img, is_scan, lang, rot_matrix)
-                    import time
-                    time.sleep(1)
                     futures.append(
-                        executor.submit(_task, textpage_info, bytes_img, img, is_scan, lang,
-                                        rot_matrix))
+                        executor.submit(
+                            _task, textpage_info, bytes_img, img, is_scan, lang, rot_matrix
+                        )
+                    )
 
                 idx = start
                 for future in as_completed(futures):
