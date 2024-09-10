@@ -1129,10 +1129,10 @@ class PDFDocument(Document):
         page_inds = []
         lang = None
 
-        def _task(textpage_info, bytes_img, img, is_scan, lang, rot_matirx):
+        def _task(textpage_info, bytes_img, img, is_scan, lang, rot_matirx, page_index: int):
             if self.mode == "local":
                 # 本地模式，不支持ocr等精细化处理
-                return textpage_info
+                return textpage_info, page_index
             b64_data = base64.b64encode(bytes_img).decode()
             layout_inp = {"b64_image": b64_data}
             layout = self.layout_agent.predict(layout_inp)
@@ -1142,7 +1142,7 @@ class PDFDocument(Document):
             blocks = self._allocate_semantic(
                 textpage_info, layout, b64_data, img, is_scan, lang, rot_matrix
             )
-            return blocks
+            return blocks, page_index
 
         with blob.as_bytes_io() as file_path:
             fitz_doc = pymupdf.open(file_path)
@@ -1215,13 +1215,12 @@ class PDFDocument(Document):
                     # blocks = _task(textpage_info, bytes_img, img, is_scan, lang, rot_matrix)
                     futures.append(
                         executor.submit(
-                            _task, textpage_info, bytes_img, img, is_scan, lang, rot_matrix
+                            _task, textpage_info, bytes_img, img, is_scan, lang, rot_matrix, idx
                         )
                     )
 
-                idx = start
                 for future in as_completed(futures):
-                    blocks = future.result()
+                    blocks, idx = future.result()
                     if not blocks:
                         continue
                     logger.info("load_layout_result_end idx={} time={}", idx, timer.get())
@@ -1233,8 +1232,6 @@ class PDFDocument(Document):
                     else:
                         groups.append(blocks)
                         page_inds.append(idx + 1)
-
-                    idx += 1
 
         groups = self._allocate_continuous(groups, lang)
         pages = self._save_to_pages(groups, page_inds, lang)
