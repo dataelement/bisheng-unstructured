@@ -1219,11 +1219,21 @@ class PDFDocument(Document):
                         )
                     )
 
+                # 重新按页数顺序排序下输出的结果
+                all_blocks = [[] for _ in range(len(futures))]
                 for future in as_completed(futures):
                     blocks, idx = future.result()
                     if not blocks:
                         continue
                     logger.info("load_layout_result_end idx={} time={}", idx, timer.get())
+                    all_blocks[idx] = [idx, blocks]
+
+                # 重新排序下输出的结果
+                for one in all_blocks:
+                    if not one:
+                        continue
+                    idx = one[0]
+                    blocks = one[1]
                     if self.with_columns:
                         sub_groups = self._divide_blocks_into_groups(blocks)
                         groups.extend(sub_groups)
