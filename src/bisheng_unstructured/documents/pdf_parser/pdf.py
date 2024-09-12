@@ -682,7 +682,7 @@ class PDFDocument(Document):
                 2,
             ] * len(semantic_labels)
 
-        print("---semantic_table_cate", semantic_table_cate)
+        # print("---semantic_table_cate", semantic_table_cate)
         timer.toc()
 
         # phrase 1. merge continuous text block by the containing matrix
