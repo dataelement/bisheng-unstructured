@@ -507,11 +507,18 @@ class PDFDocument(Document):
         TABLE_ID = 5
         inp = {"b64_image": b64_image}
         result = self.table_det_agent.predict(inp)
+        # 1: cell 2: rowcol
+        DEFAULT_TABLE_CATE = 2
+        table_layout_cats = []
         table_layout = []
-        for bb in result["bboxes"]:
+        for i, bb in enumerate(result["bboxes"]):
             coords = ((bb[0], bb[1]), (bb[2], bb[3]), (bb[4], bb[5]), (bb[6], bb[7]))
             poly = Polygon(coords)
             table_layout.append((poly, TABLE_ID))
+            if "labels" in result:
+                table_layout_cats.append(result["labels"][i])
+            else:
+                table_layout_cats.append(DEFAULT_TABLE_CATE)
 
         general_table_layout = []
         result_layout = []
@@ -535,16 +542,21 @@ class PDFDocument(Document):
                     mask[i] = 1
                     break
 
+        semantic_table_cate = [
+            None,
+        ] * len(result_layout) + table_layout_cats
         for e in table_layout:
             result_layout.append(e)
+
         for i, e in enumerate(general_table_layout):
             if mask[i] == 0:
                 result_layout.append(e)
+                semantic_table_cate.append(DEFAULT_TABLE_CATE)
 
         semantic_polys = [e[0] for e in result_layout]
         semantic_labels = [e[1] for e in result_layout]
 
-        return semantic_polys, semantic_labels
+        return semantic_polys, semantic_labels, semantic_table_cate
 
     def _enhance_texts_info_with_formula(self, b64_image, img, textpage_info):
         if self.support_formula:
@@ -656,7 +668,9 @@ class PDFDocument(Document):
         layout_info = layout
         # print('layout_info', layout_info)
         if self.enhance_table:
-            semantic_polys, semantic_labels = self._enhance_table_layout(b64_image, layout)
+            semantic_polys, semantic_labels, semantic_table_cate = self._enhance_table_layout(
+                b64_image, layout
+            )
         else:
             for info in layout_info["result"]:
                 bbs = info["bbox"]
@@ -664,6 +678,11 @@ class PDFDocument(Document):
                 semantic_polys.append(Polygon(coords))
                 semantic_labels.append(info["category_id"])
 
+            semantic_table_cate = [
+                2,
+            ] * len(semantic_labels)
+
+        print("---semantic_table_cate", semantic_table_cate)
         timer.toc()
 
         # phrase 1. merge continuous text block by the containing matrix
@@ -836,7 +855,8 @@ class PDFDocument(Document):
                         bboxes.append(b_)
 
                 table_bbox = semantic_bboxes[ind[0]]
-                table_infos.append((j, texts, bboxes, table_bbox))
+                table_cate = semantic_table_cate[ind[0]]
+                table_infos.append((j, texts, bboxes, table_bbox, table_cate))
 
             new_blocks[j].layout_type = sem_label
 
@@ -847,16 +867,17 @@ class PDFDocument(Document):
         # Parse the table layout
         table_layout = []
         for table_info in table_infos:
-            block_ind, texts, bboxes, table_bbox = table_info
+            block_ind, texts, bboxes, table_bbox, table_cate = table_info
             if not texts:
                 continue
             ocr_result = {"texts": texts, "bboxes": rect2polygon(bboxes)}
 
+            scene = "cell" if table_cate == 1 else "rowcol"
             inp = {
                 "b64_image": b64_image,
                 "ocr_result": json.dumps(ocr_result),
                 "table_bboxes": [table_bbox],
-                "scene": "cell",
+                "scene": scene,
             }
             table_result = self.table_agent.predict(inp)
             # print('---table--', ocr_result, table_bbox, table_result)
@@ -1150,7 +1171,6 @@ class PDFDocument(Document):
             max_page = fitz_doc.page_count - start
             n = self.n if self.n else max_page
             n = min(n, max_page)
-
             sample_n = min(5, fitz_doc.page_count)
             type_texts = [page.get_text() for page in fitz_doc.pages(0, sample_n)]
             type_texts = "".join(type_texts)
@@ -1211,7 +1231,6 @@ class PDFDocument(Document):
                         textpage_info = self._extract_lines_v2(textpage)
                     else:
                         textpage_info = (None, None)
-
                     # blocks = _task(textpage_info, bytes_img, img, is_scan, lang, rot_matrix)
                     futures.append(
                         executor.submit(

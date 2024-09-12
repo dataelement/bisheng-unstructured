@@ -236,28 +236,36 @@ def test_regress():
 
 
 def test_pdf_doc10():
-    url = TEST_RT_URL
+    # url = TEST_RT_URL
+    url = "http://192.168.106.20:10502/v2/models/"
     layout_ep = url + "elem_layout_v1/infer"
     cell_model_ep = url + "elem_table_cell_detect_v1/infer"
     rowcol_model_ep = url + "elem_table_rowcol_detect_v1/infer"
-    table_model_ep = url + "elem_table_detect_v1/infer"
+    # table_model_ep = url + "elem_table_detect_v1/infer"
+    table_model_ep = url + "elem_table_multiclass_v1/infer"
 
     model_params = {
         "layout_ep": layout_ep,
         "cell_model_ep": cell_model_ep,
         "rowcol_model_ep": rowcol_model_ep,
         "table_model_ep": table_model_ep,
-        "ocr_model_ep": f"{TEST_RT_URL}elem_ocr_collection_v3/infer",
+        "ocr_model_ep": "http://192.168.106.125:10502/v2/idp/idp_app/infer",
     }
     print("model_params", model_params)
 
     filename = "examples/docs/南陵电子2022.pdf"
     pdf_doc = PDFDocument(
-        file=filename, model_params=model_params, start=0, verbose=True, n_parallel=10
+        file=filename,
+        model_params=model_params,
+        start=0,
+        verbose=True,
+        n_parallel=10,
+        n=50,
+        mode="server",
     )
     pages = pdf_doc.pages
     elements = pdf_doc.elements
-    visualize_html(elements, "data/南陵电子2022-2.html")
+    # visualize_html(elements, "data/南陵电子2022-2.html")
     save_to_txt(elements, "data/南陵电子2022-2.txt")
 
 
