@@ -18,6 +18,7 @@ from shapely import Polygon
 from shapely import box as Rect
 
 from bisheng_unstructured.common import Timer
+from bisheng_unstructured.config.settings import settings
 from bisheng_unstructured.documents.base import Document, Page
 from bisheng_unstructured.documents.elements import (
     ElementMetadata,
@@ -1204,8 +1205,8 @@ class PDFDocument(Document):
                     img = page_imgs[idx - start]
                     # print('pil image png convert', timer.get())
 
-                    if self.is_scan is not None:
-                        is_scan = self.is_scan
+                    if settings.is_all_ocr:
+                        is_scan = True
 
                     if not is_scan:
                         textpage_info = self._extract_lines_v2(textpage)
