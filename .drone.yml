@@ -35,7 +35,7 @@ steps: # 定义流水线执行步骤，这些步骤将顺序执行
     #     from_secret: PROXY
     #   no_proxy: 192.168.106.8,archive.ubuntu.com
     settings:
-      registry: http://192.168.106.8:6082
+      registry: 192.168.106.8:6082
       insecure: true
       purge: true
       repo: 192.168.106.8:6082/dataelement/bisheng-unstructured
