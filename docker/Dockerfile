@@ -9,19 +9,16 @@ ENV https_proxy=
 ENV HTTP_PROXY=
 ENV HTTPS_PROXY=
 
-RUN echo \ 
-    deb http://mirrors.aliyun.com/ubuntu/ focal main restricted universe multiverse \ 
-    deb-src http://mirrors.aliyun.com/ubuntu/ focal main restricted universe multiverse \
-    deb http://mirrors.aliyun.com/ubuntu/ focal-security main restricted universe multiverse \
-    deb-src http://mirrors.aliyun.com/ubuntu/ focal-security main restricted universe multiverse \
-    deb http://mirrors.aliyun.com/ubuntu/ focal-updates main restricted universe multiverse \
-    deb-src http://mirrors.aliyun.com/ubuntu/ focal-updates main restricted universe multiverse \
-    deb http://mirrors.aliyun.com/ubuntu/ focal-proposed main restricted universe multiverse \
-    deb-src http://mirrors.aliyun.com/ubuntu/ focal-proposed main restricted universe multiverse \
-    deb http://mirrors.aliyun.com/ubuntu/ focal-backports main restricted universe multiverse \
-    deb-src http://mirrors.aliyun.com/ubuntu/ focal-backports main restricted universe multiverse \
+RUN echo \
+    deb https://mirrors.tuna.tsinghua.edu.cn/ubuntu/ focal main restricted universe multiverse \
+    deb-src https://mirrors.tuna.tsinghua.edu.cn/ubuntu/ focal main restricted universe multiverse \
+    deb https://mirrors.tuna.tsinghua.edu.cn/ubuntu/ focal-updates main restricted universe multiverse \
+    deb-src https://mirrors.tuna.tsinghua.edu.cn/ubuntu/ focal-updates main restricted universe multiverse \
+    deb https://mirrors.tuna.tsinghua.edu.cn/ubuntu/ focal-backports main restricted universe multiverse \
+    deb-src https://mirrors.tuna.tsinghua.edu.cn/ubuntu/ focal-backports main restricted universe multiverse \
+    deb http://security.ubuntu.com/ubuntu/ focal-security main restricted universe multiverse \
+    deb-src http://security.ubuntu.com/ubuntu/ focal-security main restricted universe multiverse \
     > /etc/apt/sources.list
-
 # Install Poetry
 RUN apt-get update && apt-get install gcc g++ curl build-essential postgresql-server-dev-all -y
 RUN apt-get update && apt-get install procps -y
