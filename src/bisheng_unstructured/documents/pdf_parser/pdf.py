@@ -1173,19 +1173,6 @@ class PDFDocument(Document):
             max_page = fitz_doc.page_count - start
             n = self.n if self.n else max_page
             n = min(n, max_page)
-            sample_n = min(5, fitz_doc.page_count)
-            type_texts = [page.get_text() for page in fitz_doc.pages(0, sample_n)]
-            type_texts = "".join(type_texts)
-            zh_n = len(re.findall(ZH_CHAR, type_texts))
-            total_n = len(type_texts)
-
-            is_scan = total_n < 10
-            if not is_scan:
-                lang = "zh" if zh_n > 200 or zh_n / total_n > 0.5 else "eng"
-            else:
-                lang = "zh"
-
-            # is_scan = True
 
             timer = Timer()
             if self.verbose:
@@ -1225,6 +1212,17 @@ class PDFDocument(Document):
                     bytes_img = bytes_imgs[idx - start]
                     img = page_imgs[idx - start]
                     # print('pil image png convert', timer.get())
+
+                    # 判断此页是否需要进行ocr
+                    type_texts = [page.get_text() for page in fitz_doc.pages(idx, idx + 1)]
+                    type_texts = "".join(type_texts)
+                    zh_n = len(re.findall(ZH_CHAR, type_texts))
+                    total_n = len(type_texts)
+                    is_scan = total_n < 200
+                    if not is_scan:
+                        lang = "zh" if zh_n > 200 or zh_n / total_n > 0.5 else "eng"
+                    else:
+                        lang = "zh"
 
                     if settings.is_all_ocr:
                         is_scan = True
