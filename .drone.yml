@@ -15,9 +15,9 @@ steps: # 定义流水线执行步骤，这些步骤将顺序执行
       https_proxy:
         from_secret: PROXY
     commands:
-      - git config --global core.compression 0
-      - git clone https://github.com/dataelement/bisheng-unstructured.git .
-      - git checkout $DRONE_COMMIT
+    - git config --global core.compression 0
+    - git clone https://github.com/dataelement/bisheng-unstructured.git .
+    - git checkout $DRONE_COMMIT
 
   - name: build_docker_release
     pull: if-not-exists
@@ -110,7 +110,7 @@ volumes:
 ---
 kind: pipeline
 type: docker
-name: unstructured-arm 
+name: unstructured-arm
 
 clone:
   disable: true
