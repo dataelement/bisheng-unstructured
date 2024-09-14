@@ -1,6 +1,6 @@
 kind: pipeline
 name: cicd
-type: exec
+type: docker
 
 clone:
   disable: true
