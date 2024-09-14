@@ -91,7 +91,32 @@ def test_regress():
         assert s1 == s2
 
 
-test_image3()
+def test_image4():
+    url = "http://192.168.106.20:10502/v2/models/"
+    layout_ep = url + "elem_layout_v1/infer"
+    cell_model_ep = url + "elem_table_cell_detect_v1/infer"
+    rowcol_model_ep = url + "elem_table_rowcol_detect_v1/infer"
+    table_model_ep = url + "elem_table_multiclass_v1/infer"
+
+    model_params = {
+        "layout_ep": layout_ep,
+        "cell_model_ep": cell_model_ep,
+        "rowcol_model_ep": rowcol_model_ep,
+        "table_model_ep": table_model_ep,
+        "ocr_model_ep": "http://192.168.106.20:10502/v2/idp/idp_app/infer",
+    }
+    print("model_params", model_params)
+
+    filename = "examples/docs/table_test_001.jpg"
+    doc = ImageDocument(file=filename, model_params=model_params, rt_type="sdk")
+    pages = doc.pages
+    elements = doc.elements
+
+    save_to_txt(elements, "data/table_test_001.txt")
+
+
+test_image4()
+# test_image3()
 # test_image2()
 # test_image()
-test_regress()
+# test_regress()
