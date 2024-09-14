@@ -549,10 +549,11 @@ class PDFDocument(Document):
         for e in table_layout:
             result_layout.append(e)
 
-        for i, e in enumerate(general_table_layout):
-            if mask[i] == 0:
-                result_layout.append(e)
-                semantic_table_cate.append(DEFAULT_TABLE_CATE)
+        # disable the table info in layout
+        # for i, e in enumerate(general_table_layout):
+        #     if mask[i] == 0:
+        #         result_layout.append(e)
+        #         semantic_table_cate.append(DEFAULT_TABLE_CATE)
 
         semantic_polys = [e[0] for e in result_layout]
         semantic_labels = [e[1] for e in result_layout]
