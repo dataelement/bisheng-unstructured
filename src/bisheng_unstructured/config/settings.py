@@ -4,7 +4,7 @@ from typing import Dict, List, Optional
 
 import yaml
 from loguru import logger
-from pydantic import BaseModel, BaseSettings, validator
+from pydantic import BaseModel, BaseSettings, Field, validator
 
 
 class LoggerConf(BaseModel):
@@ -51,6 +51,7 @@ class Settings(BaseSettings):
     logger_conf: LoggerConf = LoggerConf()
     pdf_model_params: PdfModelParams = PdfModelParams()
     ocr_conf: OcrConf = OcrConf()
+    is_all_ocr: bool = Field(default=False)
 
 
 def load_settings_from_yaml(file_path: str) -> Settings:
@@ -66,7 +67,7 @@ def load_settings_from_yaml(file_path: str) -> Settings:
     for key in settings_dict:
         if key not in Settings.__fields__.keys():
             raise KeyError(f"Key {key} not found in settings")
-        logger.debug(f"Loading {len(settings_dict[key])} {key} from {file_path}")
+        logger.debug(f"Loading {key} from {file_path}")
 
     return Settings(**settings_dict)
 

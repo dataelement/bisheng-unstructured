@@ -15,6 +15,7 @@ steps: # 定义流水线执行步骤，这些步骤将顺序执行
       https_proxy:
         from_secret: PROXY
     commands:
+    - git config --global core.compression 0
     - git clone https://github.com/dataelement/bisheng-unstructured.git .
     - git checkout $DRONE_COMMIT
 
@@ -27,6 +28,12 @@ steps: # 定义流水线执行步骤，这些步骤将顺序执行
         path: /var/cache/apt/archives # 将应用打包好的Jar和执行脚本挂载出来
       - name: socket
         path: /var/run/docker.sock
+    environment:
+      http_proxy:
+        from_secret: PROXY
+      https_proxy:
+        from_secret: PROXY
+      no_proxy: 192.168.106.8,archive.ubuntu.com
     settings:
       registry: http://192.168.106.8:6082
       insecure: true

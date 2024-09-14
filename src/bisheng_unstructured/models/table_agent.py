@@ -65,14 +65,12 @@ class TableDetAgentV0(object):
 class TableAgent(object):
     def __init__(self, **kwargs):
         ep_parts = kwargs.get("cell_model_ep").split("/")
-        server_url = ep_parts[2]
+        self.cell_server_url = ep_parts[2]
         self.cell_model = ep_parts[-2]
-        self.cell_client = httpclient.InferenceServerClient(url=server_url, verbose=False)
 
         ep_parts = kwargs.get("rowcol_model_ep").split("/")
-        server_url = ep_parts[2]
+        self.rowcol_server_url = ep_parts[2]
         self.rowcol_model = ep_parts[-2]
-        self.rowcol_client = httpclient.InferenceServerClient(url=server_url, verbose=False)
 
         self.timeout = kwargs.get("timeout", 60)
         self.params = {
@@ -84,9 +82,15 @@ class TableAgent(object):
     def predict(self, inp):
         scene = inp.pop("scene", "rowcol")
         if scene == "rowcol":
-            client, model = self.rowcol_client, self.rowcol_model
+            client, model = (
+                httpclient.InferenceServerClient(url=self.cell_server_url, verbose=False),
+                self.rowcol_model,
+            )
         else:
-            client, model = self.cell_client, self.cell_model
+            client, model = (
+                httpclient.InferenceServerClient(url=self.rowcol_server_url, verbose=False),
+                self.cell_model,
+            )
 
         payload = copy.deepcopy(self.params)
         payload.update(inp)
@@ -114,9 +118,8 @@ class TableAgent(object):
 class TableDetAgent(object):
     def __init__(self, **kwargs):
         ep_parts = kwargs.get("table_model_ep").split("/")
-        server_url = ep_parts[2]
+        self.server_url = ep_parts[2]
         self.model = ep_parts[-2]
-        self.client = httpclient.InferenceServerClient(url=server_url, verbose=False)
         self.timeout = kwargs.get("timeout", 60)
 
     def predict(self, inp):
@@ -126,8 +129,10 @@ class TableDetAgent(object):
         inputs = [httpclient.InferInput("INPUT", [1], "BYTES")]
         inputs[0].set_data_from_numpy(input0_data)
         outputs = [httpclient.InferRequestedOutput("OUTPUT")]
+        client = httpclient.InferenceServerClient(url=self.server_url, verbose=False)
+
         try:
-            response = self.client.infer(self.model, inputs, request_id=str(1), outputs=outputs)
+            response = client.infer(self.model, inputs, request_id=str(1), outputs=outputs)
             output_data = json.loads(response.as_numpy("OUTPUT")[0].decode("utf-8"))
         except Exception as e:
             raise Exception(f"exception in table det predict: [{e}]")

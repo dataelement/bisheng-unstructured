@@ -34,8 +34,7 @@ class LayoutAgent:
     def __init__(self, *args, **kwargs):
         ep_parts = kwargs.get("layout_ep").split("/")
         self.model = ep_parts[-2]
-        server_url = ep_parts[2]
-        self.client = httpclient.InferenceServerClient(url=server_url, verbose=False)
+        self.server_url = ep_parts[2]
 
     def predict(self, inp):
         # b64_image = base64.b64encode(open(image_file, 'rb').read()).decode('utf-8')
@@ -43,8 +42,9 @@ class LayoutAgent:
         inputs = [httpclient.InferInput("INPUT", [1], "BYTES")]
         inputs[0].set_data_from_numpy(input0_data)
         outputs = [httpclient.InferRequestedOutput("OUTPUT")]
+        client = httpclient.InferenceServerClient(url=self.server_url, verbose=False)
         try:
-            response = self.client.infer(self.model, inputs, request_id=str(1), outputs=outputs)
+            response = client.infer(self.model, inputs, request_id=str(1), outputs=outputs)
             output_data = json.loads(response.as_numpy("OUTPUT")[0].decode("utf-8"))
         except Exception as e:
             raise Exception(f"exception in layout predict: [{e}]")
