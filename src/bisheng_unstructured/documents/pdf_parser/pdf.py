@@ -1051,10 +1051,13 @@ class PDFDocument(Document):
                     new_text = join_lines([b0.block_text, b1.block_text], lang)
                     joined_lines = np.hstack([b0.ts, b1.ts])
                     joined_bboxes = np.vstack([b0.rs, b1.rs])
+                    new_pages = b0.pages.copy()
+                    new_pages.extend(b1.pages)
                     new_block = b1
                     new_block.block_text = new_text
                     new_block.ts = joined_lines
                     new_block.rs = joined_bboxes
+                    new_block.pages = new_pages
                     groups[i][0] = new_block
                     groups[i - 1].pop(-1)
             elif self.is_join_table and b0_label and b0_label == b1_label and b0_label == TABLE_ID:
@@ -1094,13 +1097,13 @@ class PDFDocument(Document):
                 text = b.block_text
 
                 element = None
-                extra_data = {"bboxes": [bbox]}
+                extra_data = {"bboxes": [bbox], "pages": b.pages}
 
                 if label == TABLE_ID:
                     # html = b[-1]
                     html = b.html_text
                     clean_html = clean_html_table(html)
-                    extra_data.update({"types": ["table"], "pages": [idx]})
+                    extra_data.update({"types": ["table"]})
                     prev_ind = 0
                     s = prev_ind
                     e = prev_ind + len(text) - 1
@@ -1116,7 +1119,6 @@ class PDFDocument(Document):
                     line_cnt = len(lines)
                     extra_data.update({"bboxes": line_bboxes})
                     if True or lang == "zh":  # for join test only
-                        extra_data.update({"pages": [idx] * line_cnt})
                         line_chars_cnt = [len(line) for line in lines]
                         indexes = []
                         for cnt in line_chars_cnt:
@@ -1253,6 +1255,8 @@ class PDFDocument(Document):
                         continue
                     idx = one[0]
                     blocks = one[1]
+                    for tmp_block in blocks:
+                        tmp_block.pages = [idx + 1 for _ in tmp_block.rs]
                     if self.with_columns:
                         sub_groups = self._divide_blocks_into_groups(blocks)
                         groups.extend(sub_groups)
