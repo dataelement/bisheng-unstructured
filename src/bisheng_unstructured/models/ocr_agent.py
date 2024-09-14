@@ -23,7 +23,7 @@ DEFAULT_CONFIG = {
     "params": {
         "sort_filter_boxes": True,
         "enable_huarong_box_adjust": True,
-        "rotateupright": False,
+        "rotateupright": True,
         "support_long_image_segment": True,
         "split_long_sentence_blank": True,
     },
