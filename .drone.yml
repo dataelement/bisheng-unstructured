@@ -21,7 +21,7 @@ steps: # 定义流水线执行步骤，这些步骤将顺序执行
 
   - name: build_docker_release
     pull: if-not-exists
-    image: docker:24.0.6
+    image: plugins/docker
     privileged: true
     volumes: # 将容器内目录挂载到宿主机，仓库需要开启Trusted设置
       - name: apt-cache
