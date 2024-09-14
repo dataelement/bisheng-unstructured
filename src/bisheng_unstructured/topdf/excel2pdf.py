@@ -92,7 +92,7 @@ class ExcelToPDF(object):
                     if one.find("text/css") != -1:
                         html_content.insert(
                             index + 1,
-                            "table {word-break: break-word;}\ntable td{word-break: break-all;}",
+                            "table {word-break: break-word;}\ntable td{word-break: break-all;border: 1px solid #000000; padding: 3px;}",
                         )
                         break
                 f.seek(0)
