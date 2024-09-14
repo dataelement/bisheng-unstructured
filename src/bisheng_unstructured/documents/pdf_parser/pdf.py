@@ -1108,7 +1108,7 @@ class PDFDocument(Document):
                     s = prev_ind
                     e = prev_ind + len(text) - 1
                     indexes = [[s, e]]
-                    extra_data.update({"indexes": indexes})
+                    extra_data.update({"indexes": indexes, "pages": [idx]})
                     metadata = ElementMetadata(text_as_html=clean_html, extra_data=extra_data)
                     element = Table(text=text, metadata=metadata)
                 else:
