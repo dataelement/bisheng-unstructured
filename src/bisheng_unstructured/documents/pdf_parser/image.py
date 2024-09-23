@@ -77,6 +77,7 @@ class ImageDocument(PDFDocument):
         if blocks:
             for tmp_block in blocks:
                 tmp_block.pages = [1 for _ in tmp_block.rs]
+                tmp_block.bbox_text = None
             if self.with_columns:
                 sub_groups = self._divide_blocks_into_groups(blocks)
                 groups.extend(sub_groups)
