@@ -19,18 +19,19 @@ from bisheng_unstructured.models import (
 
 
 class ImageDocument(PDFDocument):
-
-    def __init__(self,
-                 file: str,
-                 model_params: dict,
-                 with_columns: bool = False,
-                 text_elem_sep: str = "\n",
-                 enhance_table: bool = True,
-                 keep_text_in_image: bool = True,
-                 lang: str = "zh",
-                 verbose: bool = False,
-                 n_parallel: int = 10,
-                 **kwargs) -> None:
+    def __init__(
+        self,
+        file: str,
+        model_params: dict,
+        with_columns: bool = False,
+        text_elem_sep: str = "\n",
+        enhance_table: bool = True,
+        keep_text_in_image: bool = True,
+        lang: str = "zh",
+        verbose: bool = False,
+        n_parallel: int = 10,
+        **kwargs
+    ) -> None:
         super(ImageDocument, self).__init__(file=file, model_params=model_params)
         rt_type = kwargs.get("rt_type", "sdk")
         if rt_type in {"ocr_sdk", "idp", "sdk"}:
@@ -74,6 +75,9 @@ class ImageDocument(PDFDocument):
         # timer.toc()
 
         if blocks:
+            for tmp_block in blocks:
+                tmp_block.pages = [1 for _ in tmp_block.rs]
+                tmp_block.bbox_text = None
             if self.with_columns:
                 sub_groups = self._divide_blocks_into_groups(blocks)
                 groups.extend(sub_groups)
