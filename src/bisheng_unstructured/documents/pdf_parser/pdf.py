@@ -1140,7 +1140,7 @@ class PDFDocument(Document):
                                 continue
                             next_index = b.block_text.find(tmp_text.split("\n")[0])
                             indexes.append([prev_ind, next_index - 1])
-                            prev_ind = next_index - 1
+                            prev_ind = next_index
                         indexes.append([prev_ind, len(b.block_text) - 1])
                     extra_data.update(
                         {

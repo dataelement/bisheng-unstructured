@@ -32,7 +32,7 @@ pdf_model_params:
   table_model_ep: "http://192.168.106.12:9001/v2.1/models/elem_table_detect_v1/infer"
   ocr_model_ep: "http://192.168.106.12:9001/v2.1/models/elem_ocr_collection_v3/infer"
 
-
+is_all_ocr: false
 # ocr识别需要的配置项
 ocr_conf:
   params:
