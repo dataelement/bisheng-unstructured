@@ -43,7 +43,6 @@ steps: # 定义流水线执行步骤，这些步骤将顺序执行
         from_secret: NEXUS_PASSWORD
     commands:
       - docker login -u $docker_user -p $docker_password $docker_registry
-      - docker login -u $docker_user -p $docker_password  # 登录私有镜像源
       - docker build -t $docker_repo:$version -f ./docker/Dockerfile .
       - docker push $docker_repo:$version
     when:
