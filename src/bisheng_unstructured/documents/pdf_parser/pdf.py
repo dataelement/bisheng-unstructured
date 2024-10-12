@@ -1072,9 +1072,30 @@ class PDFDocument(Document):
                     has_header = np.all([e0 == e1 for e0, e1 in zip(row0, row1)])
                     new_text = merge_md_tables([b0.block_text, b1.block_text], has_header)
                     new_html_text = merge_html_tables([b0.html_text, b1.html_text], has_header)
+                    new_pages = b0.pages.copy()
+                    new_pages.extend(b1.pages)
+                    joined_lines = np.hstack([b0.ts, b1.ts])
+                    joined_bboxes = np.vstack([b0.rs, b1.rs])
                     new_block = b1
+                    new_bbox = []
+                    new_bbox_text = []
+                    if b0.bbox_text is not None:
+                        new_bbox_text.extend(b0.bbox_text)
+                    else:
+                        new_bbox_text.append(b0.block_text)
+                    if b1.bbox_text is not None:
+                        new_bbox_text.extend(b1.bbox_text)
+                    else:
+                        new_bbox_text.append(b1.block_text)
+                    new_bbox.extend(b0.bbox)
+                    new_bbox.extend(b1.bbox)
+                    new_block.bbox = new_bbox
+                    new_block.pages = new_pages
+                    new_block.ts = joined_lines
+                    new_block.rs = joined_bboxes
                     new_block.block_text = new_text
                     new_block.html_text = new_html_text
+                    new_block.bbox_text = new_bbox_text
                     groups[i][0] = new_block
                     groups[i - 1].pop(-1)
 
@@ -1103,12 +1124,32 @@ class PDFDocument(Document):
                     # html = b[-1]
                     html = b.html_text
                     clean_html = clean_html_table(html)
-                    extra_data.update({"types": ["table"]})
                     prev_ind = 0
-                    s = prev_ind
-                    e = prev_ind + len(text) - 1
-                    indexes = [[s, e]]
-                    extra_data.update({"indexes": indexes, "pages": [idx]})
+                    table_bbox = [
+                        [bbox[i], bbox[i + 1], bbox[i + 2], bbox[i + 3]]
+                        for i in range(0, len(bbox) - 3, 4)
+                    ]
+                    indexes = [[0, len(b.block_text) - 1]]
+                    metadata_types = ["table"]
+                    if len(table_bbox) > 1:
+                        indexes = []
+                        metadata_types = []
+                        for bbox_index, tmp_text in enumerate(b.bbox_text):
+                            metadata_types.append("table")
+                            if bbox_index == 0:
+                                continue
+                            next_index = b.block_text.find(tmp_text.split("\n")[0])
+                            indexes.append([prev_ind, next_index - 1])
+                            prev_ind = next_index
+                        indexes.append([prev_ind, len(b.block_text) - 1])
+                    extra_data.update(
+                        {
+                            "indexes": indexes,
+                            "bboxes": table_bbox,
+                            "pages": list(set(b.pages)),
+                            "types": metadata_types,
+                        }
+                    )
                     metadata = ElementMetadata(text_as_html=clean_html, extra_data=extra_data)
                     element = Table(text=text, metadata=metadata)
                 else:
@@ -1257,6 +1298,7 @@ class PDFDocument(Document):
                     blocks = one[1]
                     for tmp_block in blocks:
                         tmp_block.pages = [idx + 1 for _ in tmp_block.rs]
+                        tmp_block.bbox_text = None
                     if self.with_columns:
                         sub_groups = self._divide_blocks_into_groups(blocks)
                         groups.extend(sub_groups)
