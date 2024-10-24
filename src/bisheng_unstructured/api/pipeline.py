@@ -43,7 +43,7 @@ def partition_pdf(filename, model_params,scale, **kwargs):
         # if rt_type in {"ocr_sdk", "idp"}:
         #     doc = IDP_PDFDocument(file=filename, model_params=model_params, **kwargs)
         # else:
-        doc = PDFDocument(file=filename, model_params=model_params, **kwargs)
+        doc = PDFDocument(file=filename, model_params=model_params,scale=scale, **kwargs)
 
         _ = doc.pages
         return doc.elements

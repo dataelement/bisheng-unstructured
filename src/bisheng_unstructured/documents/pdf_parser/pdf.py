@@ -1279,7 +1279,7 @@ class PDFDocument(Document):
                     if settings.is_all_ocr:
                         is_scan = True
 
-                    if not is_scan:
+                    if not is_scan or self.scale==1:
                         textpage_info = self._extract_lines_v2(textpage)
                     else:
                         textpage_info = (None, None)
