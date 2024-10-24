@@ -12,6 +12,7 @@ class UnstructuredInput(BaseModel):
     file_path: Optional[str] = None
     file_type: Optional[str] = None
     scale: Optional[int] = 1
+    is_scan: Optional[bool] = None
 
 
 class UnstructuredOutput(BaseModel):

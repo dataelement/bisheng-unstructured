@@ -4,7 +4,7 @@ import io
 import json
 import re
 from collections import Counter
-from concurrent.futures import ThreadPoolExecutor
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from copy import deepcopy
 from dataclasses import dataclass
 from typing import Any, List, Optional, Union
@@ -18,6 +18,7 @@ from shapely import Polygon
 from shapely import box as Rect
 
 from bisheng_unstructured.common import Timer
+from bisheng_unstructured.config.settings import settings
 from bisheng_unstructured.documents.base import Document, Page
 from bisheng_unstructured.documents.elements import (
     ElementMetadata,
@@ -33,19 +34,18 @@ from bisheng_unstructured.documents.markdown import (
     transform_html_table_to_md,
     transform_list_to_table,
 )
+from bisheng_unstructured.documents.pdf_parser.blob import Blob
 from bisheng_unstructured.models import (
     FormulaAgent,
     LayoutAgent,
     OCRAgent,
-    TableAgent,
-    TableDetAgent,
     RTLayoutAgent,
     RTOCRAgent,
     RTTableAgent,
     RTTableDetAgent,
+    TableAgent,
+    TableDetAgent,
 )
-
-from bisheng_unstructured.documents.pdf_parser.blob import Blob
 
 ZH_CHAR = re.compile("[\u4e00-\u9fa5]")
 ENG_WORD = re.compile(pattern=r"^[a-zA-Z0-9?><;,{}[\]\-_+=!@#$%\^&*|']*$", flags=re.DOTALL)
@@ -169,7 +169,6 @@ class BlockInfo:
 
 
 class Segment:
-
     def __init__(self, seg):
         self.whole = seg
         self.segs = []
@@ -262,6 +261,7 @@ class PDFDocument(Document):
         is_join_table: bool = True,
         with_columns: bool = False,
         support_rotate: bool = False,
+        is_scan: Optional[bool] = None,
         text_elem_sep: str = "\n",
         start: int = 0,
         n: int = None,
@@ -276,7 +276,7 @@ class PDFDocument(Document):
     ) -> None:
         """Initialize with a file path."""
         rt_type = kwargs.get("rt_type", "sdk")
-        if rt_type in {"sdk", "idp"}:
+        if rt_type in {"sdk", "idp", "ocr_sdk"}:
             self.layout_agent = LayoutAgent(**model_params)
             self.table_agent = TableAgent(**model_params)
             self.ocr_agent = OCRAgent(**model_params)
@@ -303,6 +303,7 @@ class PDFDocument(Document):
         self.enable_isolated_formula = enable_isolated_formula
         self.n_parallel = n_parallel
         self.scale = scale
+        self.is_scan = is_scan
         self.mode = kwargs.get("mode", "local")
         super().__init__()
 
@@ -340,8 +341,9 @@ class PDFDocument(Document):
             if block_type != 0:
                 bbox = block["bbox"]
                 block_text = ""
-                block_info = BlockInfo([bbox[0], bbox[1], bbox[2], bbox[3]], block_text, block_no,
-                                       block_type)
+                block_info = BlockInfo(
+                    [bbox[0], bbox[1], bbox[2], bbox[3]], block_text, block_no, block_type
+                )
                 line_blocks.append(block_info)
                 line_words_info.append((None, None))
 
@@ -378,8 +380,7 @@ class PDFDocument(Document):
                     continue
 
                 line_words_info.append((words, words_bboxes))
-                line_text = "".join(
-                    [char["c"] for span in line["spans"] for char in span["chars"]])
+                line_text = "".join([char["c"] for span in line["spans"] for char in span["chars"]])
                 bb0, bb1, bb2, bb3 = merge_rects(np.asarray(words_bboxes))
 
                 block_info = BlockInfo([bb0, bb1, bb2, bb3], line_text, block_no, block_type)
@@ -397,8 +398,9 @@ class PDFDocument(Document):
             if block_type != 0:
                 bbox = block["bbox"]
                 block_text = ""
-                block_info = BlockInfo([bbox[0], bbox[1], bbox[2], bbox[3]], block_text, block_no,
-                                       block_type)
+                block_info = BlockInfo(
+                    [bbox[0], bbox[1], bbox[2], bbox[3]], block_text, block_no, block_type
+                )
                 line_blocks.append(block_info)
                 line_words_info.append((None, None))
 
@@ -413,8 +415,9 @@ class PDFDocument(Document):
                 line_words_info.append((words, words_bbox))
 
                 line_text = "".join([span["text"] for span in line["spans"]])
-                block_info = BlockInfo([bbox[0], bbox[1], bbox[2], bbox[3]], line_text, block_no,
-                                       block_type)
+                block_info = BlockInfo(
+                    [bbox[0], bbox[1], bbox[2], bbox[3]], line_text, block_no, block_type
+                )
                 line_blocks.append(block_info)
 
         return line_blocks, line_words_info
@@ -471,7 +474,8 @@ class PDFDocument(Document):
             # step 6. merge the segmented line patches and sort by tlbr
             inp = {"b64_image": b64_image}
             mf_outs = self.formula_agent.predict(
-                inp, img, enable_isolated_formula=self.enable_isolated_formula)
+                inp, img, enable_isolated_formula=self.enable_isolated_formula
+            )
             texts, bboxes, words_info = self.ocr_agent.predict_with_mask(img, mf_outs)
         else:
             # get general ocr result
@@ -506,11 +510,18 @@ class PDFDocument(Document):
         TABLE_ID = 5
         inp = {"b64_image": b64_image}
         result = self.table_det_agent.predict(inp)
+        # 1: cell 2: rowcol
+        DEFAULT_TABLE_CATE = 2
+        table_layout_cats = []
         table_layout = []
-        for bb in result["bboxes"]:
+        for i, bb in enumerate(result["bboxes"]):
             coords = ((bb[0], bb[1]), (bb[2], bb[3]), (bb[4], bb[5]), (bb[6], bb[7]))
             poly = Polygon(coords)
             table_layout.append((poly, TABLE_ID))
+            if "labels" in result:
+                table_layout_cats.append(result["labels"][i])
+            else:
+                table_layout_cats.append(DEFAULT_TABLE_CATE)
 
         general_table_layout = []
         result_layout = []
@@ -534,16 +545,22 @@ class PDFDocument(Document):
                     mask[i] = 1
                     break
 
+        semantic_table_cate = [
+            None,
+        ] * len(result_layout) + table_layout_cats
         for e in table_layout:
             result_layout.append(e)
-        for i, e in enumerate(general_table_layout):
-            if mask[i] == 0:
-                result_layout.append(e)
+
+        # disable the table info in layout
+        # for i, e in enumerate(general_table_layout):
+        #     if mask[i] == 0:
+        #         result_layout.append(e)
+        #         semantic_table_cate.append(DEFAULT_TABLE_CATE)
 
         semantic_polys = [e[0] for e in result_layout]
         semantic_labels = [e[1] for e in result_layout]
 
-        return semantic_polys, semantic_labels
+        return semantic_polys, semantic_labels, semantic_table_cate
 
     def _enhance_texts_info_with_formula(self, b64_image, img, textpage_info):
         if self.support_formula:
@@ -558,14 +575,9 @@ class PDFDocument(Document):
         else:
             return textpage_info
 
-    def _allocate_semantic(self,
-                           textpage_info,
-                           layout,
-                           b64_image,
-                           img,
-                           is_scan=True,
-                           lang="zh",
-                           rot_matrix=None):
+    def _allocate_semantic(
+        self, textpage_info, layout, b64_image, img, is_scan=True, lang="zh", rot_matrix=None
+    ):
         class_name = ["印章", "图片", "标题", "段落", "表格", "页眉", "页码", "页脚"]
         effective_class_inds = [3, 4, 5, 999, 1000]
         non_conti_class_ids = [6, 7, 8]
@@ -660,7 +672,9 @@ class PDFDocument(Document):
         layout_info = layout
         # print('layout_info', layout_info)
         if self.enhance_table:
-            semantic_polys, semantic_labels = self._enhance_table_layout(b64_image, layout)
+            semantic_polys, semantic_labels, semantic_table_cate = self._enhance_table_layout(
+                b64_image, layout
+            )
         else:
             for info in layout_info["result"]:
                 bbs = info["bbox"]
@@ -668,6 +682,11 @@ class PDFDocument(Document):
                 semantic_polys.append(Polygon(coords))
                 semantic_labels.append(info["category_id"])
 
+            semantic_table_cate = [
+                2,
+            ] * len(semantic_labels)
+
+        # print("---semantic_table_cate", semantic_table_cate)
         timer.toc()
 
         # phrase 1. merge continuous text block by the containing matrix
@@ -725,8 +744,10 @@ class PDFDocument(Document):
                 ord_ind = np.min(ori_orders)
                 mask[ind] = 1
                 new_block_info.append(
-                    BlockInfo([rect[0], rect[1], rect[2], rect[3]], "", -1, -1, ts, rs, ind,
-                              ord_ind))
+                    BlockInfo(
+                        [rect[0], rect[1], rect[2], rect[3]], "", -1, -1, ts, rs, ind, ord_ind
+                    )
+                )
                 max_block_type = np.max([blocks[i].block_type for i in ind])
                 if max_block_type == FORMULA_ID:
                     new_block_info[-1].layout_type = FORMULA_ID
@@ -748,8 +769,10 @@ class PDFDocument(Document):
                 mask[start:end] = 1
 
                 new_block_info.append(
-                    BlockInfo([rect[0], rect[1], rect[2], rect[3]], "", -1, -1, ts, rs, pos,
-                              ord_ind))
+                    BlockInfo(
+                        [rect[0], rect[1], rect[2], rect[3]], "", -1, -1, ts, rs, pos, ord_ind
+                    )
+                )
 
                 max_block_type = np.max([blocks[i].block_type for i in pos])
                 if max_block_type == FORMULA_ID:
@@ -836,7 +859,8 @@ class PDFDocument(Document):
                         bboxes.append(b_)
 
                 table_bbox = semantic_bboxes[ind[0]]
-                table_infos.append((j, texts, bboxes, table_bbox))
+                table_cate = semantic_table_cate[ind[0]]
+                table_infos.append((j, texts, bboxes, table_bbox, table_cate))
 
             new_blocks[j].layout_type = sem_label
 
@@ -847,16 +871,17 @@ class PDFDocument(Document):
         # Parse the table layout
         table_layout = []
         for table_info in table_infos:
-            block_ind, texts, bboxes, table_bbox = table_info
+            block_ind, texts, bboxes, table_bbox, table_cate = table_info
             if not texts:
                 continue
             ocr_result = {"texts": texts, "bboxes": rect2polygon(bboxes)}
 
+            scene = "cell" if table_cate == 1 else "rowcol"
             inp = {
                 "b64_image": b64_image,
                 "ocr_result": json.dumps(ocr_result),
                 "table_bboxes": [table_bbox],
-                "scene": "cell",
+                "scene": scene,
             }
             table_result = self.table_agent.predict(inp)
             # print('---table--', ocr_result, table_bbox, table_result)
@@ -1028,10 +1053,13 @@ class PDFDocument(Document):
                     new_text = join_lines([b0.block_text, b1.block_text], lang)
                     joined_lines = np.hstack([b0.ts, b1.ts])
                     joined_bboxes = np.vstack([b0.rs, b1.rs])
+                    new_pages = b0.pages.copy()
+                    new_pages.extend(b1.pages)
                     new_block = b1
                     new_block.block_text = new_text
                     new_block.ts = joined_lines
                     new_block.rs = joined_bboxes
+                    new_block.pages = new_pages
                     groups[i][0] = new_block
                     groups[i - 1].pop(-1)
             elif self.is_join_table and b0_label and b0_label == b1_label and b0_label == TABLE_ID:
@@ -1046,9 +1074,30 @@ class PDFDocument(Document):
                     has_header = np.all([e0 == e1 for e0, e1 in zip(row0, row1)])
                     new_text = merge_md_tables([b0.block_text, b1.block_text], has_header)
                     new_html_text = merge_html_tables([b0.html_text, b1.html_text], has_header)
+                    new_pages = b0.pages.copy()
+                    new_pages.extend(b1.pages)
+                    joined_lines = np.hstack([b0.ts, b1.ts])
+                    joined_bboxes = np.vstack([b0.rs, b1.rs])
                     new_block = b1
+                    new_bbox = []
+                    new_bbox_text = []
+                    if b0.bbox_text is not None:
+                        new_bbox_text.extend(b0.bbox_text)
+                    else:
+                        new_bbox_text.append(b0.block_text)
+                    if b1.bbox_text is not None:
+                        new_bbox_text.extend(b1.bbox_text)
+                    else:
+                        new_bbox_text.append(b1.block_text)
+                    new_bbox.extend(b0.bbox)
+                    new_bbox.extend(b1.bbox)
+                    new_block.bbox = new_bbox
+                    new_block.pages = new_pages
+                    new_block.ts = joined_lines
+                    new_block.rs = joined_bboxes
                     new_block.block_text = new_text
                     new_block.html_text = new_html_text
+                    new_block.bbox_text = new_bbox_text
                     groups[i][0] = new_block
                     groups[i - 1].pop(-1)
 
@@ -1078,18 +1127,38 @@ class PDFDocument(Document):
                 text = b.block_text
 
                 element = None
-                extra_data = {"bboxes": [self._divide_by_scale(bbox,self.scale)]}
+                extra_data = {"bboxes": [self._divide_by_scale(bbox,self.scale)], "pages": b.pages}
 
                 if label == TABLE_ID:
                     # html = b[-1]
                     html = b.html_text
                     clean_html = clean_html_table(html)
-                    extra_data.update({"types": ["table"], "pages": [idx]})
                     prev_ind = 0
-                    s = prev_ind
-                    e = prev_ind + len(text) - 1
-                    indexes = [[s, e]]
-                    extra_data.update({"indexes": indexes})
+                    table_bbox = [
+                        [bbox[i], bbox[i + 1], bbox[i + 2], bbox[i + 3]]
+                        for i in range(0, len(bbox) - 3, 4)
+                    ]
+                    indexes = [[0, len(b.block_text) - 1]]
+                    metadata_types = ["table"]
+                    if len(table_bbox) > 1:
+                        indexes = []
+                        metadata_types = []
+                        for bbox_index, tmp_text in enumerate(b.bbox_text):
+                            metadata_types.append("table")
+                            if bbox_index == 0:
+                                continue
+                            next_index = b.block_text.find(tmp_text.split("\n")[0])
+                            indexes.append([prev_ind, next_index - 1])
+                            prev_ind = next_index
+                        indexes.append([prev_ind, len(b.block_text) - 1])
+                    extra_data.update(
+                        {
+                            "indexes": indexes,
+                            "bboxes": table_bbox,
+                            "pages": list(set(b.pages)),
+                            "types": metadata_types,
+                        }
+                    )
                     metadata = ElementMetadata(text_as_html=clean_html, extra_data=extra_data)
                     element = Table(text=text, metadata=metadata)
                 else:
@@ -1100,7 +1169,6 @@ class PDFDocument(Document):
                     line_cnt = len(lines)
                     extra_data.update({"bboxes": self._divide_by_scale(line_bboxes,self.scale)})
                     if True or lang == "zh":  # for join test only
-                        extra_data.update({"pages": [idx] * line_cnt})
                         line_chars_cnt = [len(line) for line in lines]
                         indexes = []
                         for cnt in line_chars_cnt:
@@ -1136,16 +1204,20 @@ class PDFDocument(Document):
         page_inds = []
         lang = None
 
-        def _task(textpage_info, bytes_img, img, is_scan, lang, rot_matirx):
+        def _task(textpage_info, bytes_img, img, is_scan, lang, rot_matirx, page_index: int):
             if self.mode == "local":
                 # 本地模式，不支持ocr等精细化处理
-                return textpage_info
+                return textpage_info, page_index
             b64_data = base64.b64encode(bytes_img).decode()
             layout_inp = {"b64_image": b64_data}
             layout = self.layout_agent.predict(layout_inp)
-            blocks = self._allocate_semantic(textpage_info, layout, b64_data, img, is_scan, lang,
-                                             rot_matrix)
-            return blocks
+            logger.info(
+                "load_layout_result_begin is_scan={} support={}", is_scan, self.support_formula
+            )
+            blocks = self._allocate_semantic(
+                textpage_info, layout, b64_data, img, is_scan, lang, rot_matrix
+            )
+            return blocks, page_index
 
         with blob.as_bytes_io() as file_path:
             fitz_doc = pymupdf.open(file_path)
@@ -1153,20 +1225,6 @@ class PDFDocument(Document):
             max_page = fitz_doc.page_count - start
             n = self.n if self.n else max_page
             n = min(n, max_page)
-
-            sample_n = min(5, fitz_doc.page_count)
-            type_texts = [page.get_text() for page in fitz_doc.pages(0, sample_n)]
-            type_texts = "".join(type_texts)
-            zh_n = len(re.findall(ZH_CHAR, type_texts))
-            total_n = len(type_texts)
-
-            is_scan = total_n < 10
-            if not is_scan:
-                lang = "zh" if zh_n > 200 or zh_n / total_n > 0.5 else "eng"
-            else:
-                lang = "zh"
-
-            # is_scan = True
 
             timer = Timer()
             if self.verbose:
@@ -1184,7 +1242,7 @@ class PDFDocument(Document):
                 bytes_imgs.append(bytes_img)
 
             timer.toc()
-            logger.info("pdfium render image ", timer.get())
+            logger.info("pdfium render image size={} time={}", len(page_imgs), timer.get())
 
             results = []
             with ThreadPoolExecutor(max_workers=self.n_parallel) as executor:
@@ -1207,23 +1265,49 @@ class PDFDocument(Document):
                     img = page_imgs[idx - start]
                     # print('pil image png convert', timer.get())
 
+                    # 判断此页是否需要进行ocr
+                    type_texts = [page.get_text() for page in fitz_doc.pages(idx, idx + 1)]
+                    type_texts = "".join(type_texts)
+                    zh_n = len(re.findall(ZH_CHAR, type_texts))
+                    total_n = len(type_texts)
+                    is_scan = total_n < 200
+                    if not is_scan:
+                        lang = "zh" if zh_n > 200 or zh_n / total_n > 0.5 else "eng"
+                    else:
+                        lang = "zh"
+
+                    if settings.is_all_ocr:
+                        is_scan = True
+
                     if not is_scan:
                         textpage_info = self._extract_lines_v2(textpage)
                     else:
                         textpage_info = (None, None)
-
                     # blocks = _task(textpage_info, bytes_img, img, is_scan, lang, rot_matrix)
-
                     futures.append(
-                        executor.submit(_task, textpage_info, bytes_img, img, is_scan, lang,
-                                        rot_matrix))
+                        executor.submit(
+                            _task, textpage_info, bytes_img, img, is_scan, lang, rot_matrix, idx
+                        )
+                    )
 
-                idx = start
-                for future in futures:
-                    blocks = future.result()
+                # 重新按页数顺序排序下输出的结果
+                all_blocks = [[] for _ in range(len(futures))]
+                for future in as_completed(futures):
+                    blocks, idx = future.result()
                     if not blocks:
                         continue
+                    logger.info("load_layout_result_end idx={} time={}", idx, timer.get())
+                    all_blocks[idx] = [idx, blocks]
 
+                # 重新排序下输出的结果
+                for one in all_blocks:
+                    if not one:
+                        continue
+                    idx = one[0]
+                    blocks = one[1]
+                    for tmp_block in blocks:
+                        tmp_block.pages = [idx + 1 for _ in tmp_block.rs]
+                        tmp_block.bbox_text = None
                     if self.with_columns:
                         sub_groups = self._divide_blocks_into_groups(blocks)
                         groups.extend(sub_groups)
@@ -1232,8 +1316,6 @@ class PDFDocument(Document):
                     else:
                         groups.append(blocks)
                         page_inds.append(idx + 1)
-
-                    idx += 1
 
         groups = self._allocate_continuous(groups, lang)
         pages = self._save_to_pages(groups, page_inds, lang)

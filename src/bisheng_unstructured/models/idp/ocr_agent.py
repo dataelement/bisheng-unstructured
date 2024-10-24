@@ -1,10 +1,9 @@
 import copy
-
 import os
+
 import requests
 
-from bisheng_unstructured.models.common import (load_json)
-from bisheng_unstructured.models.idp.dummy_ocr_agent import BlockInfo, process_whole_paragraph
+from bisheng_unstructured.models.common import load_json
 
 DEFAULT_CONFIG = {
     "params": {
@@ -20,29 +19,27 @@ DEFAULT_CONFIG = {
             "recog": "general_text_reg_nb_v1.0_faster",
         },
         "hand": {
-            "det": "general_text_det_mrcnn_v2.0",
-            "recog": "transformer-hand-v1.16-faster",
+            "det": "general_text_det_v2.0",
+            "recog": "general_text_reg_nb_v1.0_faster",
         },
         "print_recog": {
-            "recog": "transformer-blank-v0.2-faster",
+            "recog": "general_text_reg_nb_v1.0_faster",
         },
         "hand_recog": {
-            "recog": "transformer-hand-v1.16-faster",
+            "recog": "general_text_reg_nb_v1.0_faster",
         },
         "det": {
-            "det": "general_text_det_mrcnn_v2.0",
+            "det": "general_text_det_v2.0",
         },
-    }
+    },
 }
 
 ocr_predict_bak = {
-    'code': 200,
-    'message': 'ok',
-    'request_id': 21513655180,
-    'elapse': 595,
-    'result': {
-        'ocr_result': {}
-    }
+    "code": 200,
+    "message": "ok",
+    "request_id": 21513655180,
+    "elapse": 595,
+    "result": {"ocr_result": {}},
 }
 
 
@@ -55,7 +52,6 @@ def convert_json(inp):
 # OCR Agent Version 0.1, update at 2023.08.18
 #  - add predict_with_mask support recog with embedding formula, 2024.01.16
 class OCRAgent(object):
-
     def __init__(self, **kwargs):
         self.ep = kwargs.get("ocr_model_ep")
         self.client = requests.Session()
@@ -65,8 +61,7 @@ class OCRAgent(object):
             jsoncontent = load_json(mdoel_config_path)
         else:
             jsoncontent = None
-        if jsoncontent is not None and "params" in jsoncontent and \
-            "scene_mapping" in jsoncontent:
+        if jsoncontent is not None and "params" in jsoncontent and "scene_mapping" in jsoncontent:
             self.params = jsoncontent["params"]
             self.scene_mapping = jsoncontent["scene_mapping"]
         else:
@@ -83,19 +78,11 @@ class OCRAgent(object):
         req_data = {"param": params, "data": [b64_image]}
 
         try:
-            r = self.client.post(url=self.ep, json=req_data, timeout=self.timeout).json()
-            # ret = convert_json(r.json())
+            from loguru import logger
 
-            layout_text, layout_boxs = process_whole_paragraph(r["result"]['ocr_result'])
-            b0 = BlockInfo(
-                bbox=[],
-                block_text=''.join([''.join(text) for text in layout_text]),
-                block_no=0,
-                ts=[''.join(text) for text in layout_text],
-                rs=[text[0] for text in layout_boxs],
-                layout_type=0,
-            )
-            return [b0]
+            logger.info(f"ocr predict request: {params}")
+            r = self.client.post(url=self.ep, json=req_data, timeout=self.timeout)
+            return r.json()
             # return r.json()
         except requests.exceptions.Timeout:
             raise Exception(f"timeout in ocr predict")

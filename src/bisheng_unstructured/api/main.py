@@ -8,13 +8,12 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import ORJSONResponse
 from loguru import logger
 
-from bisheng_unstructured.common import Timer
-from bisheng_unstructured.config.settings import settings
-
-from bisheng_unstructured.common.logger import configure
-from bisheng_unstructured.middlewares.http_middleware import CustomMiddleware
 from bisheng_unstructured.api.pipeline import Pipeline
 from bisheng_unstructured.api.types import ConfigInput, UnstructuredInput, UnstructuredOutput
+from bisheng_unstructured.common import Timer
+from bisheng_unstructured.common.logger import configure
+from bisheng_unstructured.config.settings import settings
+from bisheng_unstructured.middlewares.http_middleware import CustomMiddleware
 
 # Fastapi App
 
@@ -100,8 +99,7 @@ async def etl4_llm(inp: UnstructuredInput):
 
         inp.file_path = file_path
         inp.file_type = file_type
-
-        if pipeline.mode == "local":
+        if pipeline.mode == "local" and inp.mode == "partition":
             # 本地模式只支持text 有限格式
             logger.info(f"local_pipeline mode=[{inp.mode}] filename=[{inp.filename}]")
             inp.mode = "text"
@@ -120,7 +118,7 @@ async def etl4_llm(inp: UnstructuredInput):
 
         timer.toc()
         outp = pipeline.predict(inp)
-        if inp.mode == "partition":
+        if inp.mode == "partition" and outp.status_code == 200:
             with open(file_path, "rb") as fin:
                 outp.b64_pdf = base64.b64encode(fin.read()).decode("utf-8")
 
