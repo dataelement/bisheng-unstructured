@@ -1270,7 +1270,7 @@ class PDFDocument(Document):
                     type_texts = "".join(type_texts)
                     zh_n = len(re.findall(ZH_CHAR, type_texts))
                     total_n = len(type_texts)
-                    is_scan = total_n < 200
+                    is_scan = total_n < 200 or self.scale!=1
                     if not is_scan:
                         lang = "zh" if zh_n > 200 or zh_n / total_n > 0.5 else "eng"
                     else:
@@ -1279,7 +1279,7 @@ class PDFDocument(Document):
                     if settings.is_all_ocr:
                         is_scan = True
 
-                    if not is_scan or self.scale==1:
+                    if not is_scan:
                         textpage_info = self._extract_lines_v2(textpage)
                     else:
                         textpage_info = (None, None)
