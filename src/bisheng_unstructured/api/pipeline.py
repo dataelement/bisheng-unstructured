@@ -24,7 +24,7 @@ from bisheng_unstructured.partition.xlsx import partition_xlsx
 from bisheng_unstructured.staging.base import convert_to_isd
 
 
-def partition_pdf(filename, model_params, **kwargs):
+def partition_pdf(filename, model_params,scale, **kwargs):
     if kwargs.get("mode") == "local":
         # pypdf 进行解析
         import pypdf
@@ -43,7 +43,7 @@ def partition_pdf(filename, model_params, **kwargs):
         # if rt_type in {"ocr_sdk", "idp"}:
         #     doc = IDP_PDFDocument(file=filename, model_params=model_params, **kwargs)
         # else:
-        doc = PDFDocument(file=filename, model_params=model_params, **kwargs)
+        doc = PDFDocument(file=filename, model_params=model_params,scale=scale, **kwargs)
 
         _ = doc.pages
         return doc.elements
@@ -156,7 +156,7 @@ class Pipeline(object):
             return UnstructuredOutput(status_code=400, status_message="本地模型不支持图片")
 
         if part_func == partition_pdf or part_func == partition_image:
-            part_inp.update({"model_params": self.pdf_model_params})
+            part_inp.update({"model_params": self.pdf_model_params,"scale":inp.scale})
         try:
             elements = part_func(**part_inp)
             mode = inp.mode

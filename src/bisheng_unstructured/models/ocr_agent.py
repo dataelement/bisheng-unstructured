@@ -29,21 +29,21 @@ DEFAULT_CONFIG = {
     },
     "scene_mapping": {
         "print": {
-            "det": "general_text_det_v2.0",
-            "recog": "general_text_reg_nb_v1.0_faster",
+            "det": "general_text_det_mrcnn_v2.0",
+            "recog": "transformer-blank-v0.2-faster",
         },
         "hand": {
-            "det": "general_text_det_v2.0",
-            "recog": "general_text_reg_nb_v1.0_faster",
+            "det": "general_text_det_mrcnn_v2.0",
+            "recog": "transformer-hand-v1.16-faster",
         },
         "print_recog": {
-            "recog": "general_text_reg_nb_v1.0_faster",
+            "recog": "transformer-blank-v0.2-faster",
         },
         "hand_recog": {
-            "recog": "general_text_reg_nb_v1.0_faster",
+            "recog": "transformer-hand-v1.16-faster",
         },
         "det": {
-            "det": "general_text_det_v2.0",
+            "det": "general_text_det_mrcnn_v2.0",
         },
     },
 }

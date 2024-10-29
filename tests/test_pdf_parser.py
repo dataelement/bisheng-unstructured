@@ -5,7 +5,7 @@ from bisheng_unstructured.documents.html_utils import save_to_txt, visualize_htm
 from bisheng_unstructured.documents.pdf_parser.pdf import PDFDocument
 
 RT_EP = os.environ.get("RT_EP", "192.168.106.12:9001")
-TEST_RT_URL = f"http://{RT_EP}/v2.1/models/"
+TEST_RT_URL = f"http://10.60.38.67:3011/v2.1/models/"
 
 
 def test_pdf_doc():
@@ -22,8 +22,8 @@ def test_pdf_doc():
         "table_model_ep": table_model_ep,
     }
 
-    filename = "examples/docs/layout-parser-paper-fast.pdf"
-    pdf_doc = PDFDocument(file=filename, model_params=model_params, n=2)
+    filename = "examples/docs/模糊+水印-租赁物清单-20231213142249768106738.pdf"
+    pdf_doc = PDFDocument(file=filename, model_params=model_params, n=2,scale=2)
     pages = pdf_doc.pages
     elements = pdf_doc.elements
 
@@ -156,9 +156,9 @@ def test_pdf_doc7():
         "ocr_model_ep": f"{TEST_RT_URL}elem_ocr_collection_v3/infer",
     }
 
-    filename = "examples/docs/maoxuan_scan.pdf"
+    filename = "examples/docs/模糊+水印-租赁物清单-20231213142249768106738.pdf"
     pdf_doc = PDFDocument(
-        file=filename, model_params=model_params, enhance_table=False, start=0, n=100
+        file=filename, model_params=model_params, enhance_table=False, start=0, n=100,scale=2
     )
     pages = pdf_doc.pages
     elements = pdf_doc.elements
@@ -276,9 +276,9 @@ def test_pdf_doc10():
 # test_pdf_doc5()
 # test_pdf_doc6()
 
-# test_pdf_doc7()
+test_pdf_doc7()
 # test_pdf_doc8()
 # test_pdf_doc9()
 # test_regress()
 
-test_pdf_doc10()
+# test_pdf_doc10()
