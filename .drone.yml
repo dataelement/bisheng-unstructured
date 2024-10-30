@@ -149,7 +149,7 @@ steps:
         from_secret: PROXY
       no_proxy: 192.168.106.8,192.168.106.8
       version: ${DRONE_TAG}
-      docker_repo: dataelement/bisheng-unstructured
+      docker_repo: dataelement/bisheng-unstructured-arm
       docker_user:
         from_secret: DOCKER_USER
       docker_password:
@@ -163,11 +163,12 @@ steps:
       - docker login -u $cr_user -p $cr_password $cr_repo_host  # 登录官方镜像源
       - docker login -u $docker_user -p $docker_password  # 登录私有镜像源
       # 推送amd的镜像到cr镜像仓库
-      - docker build -t $docker_repo:$version -t $docker_repo-arm:latest -t $cr_repo_host/$docker_repo-arm:$version -t $cr_repo_host/$docker_repo-arm:latest -f ./docker/Dockerfile-arm .
+      #- docker build -t $docker_repo:$version -t $docker_repo:latest -t $cr_repo_host/$docker_repo:$version -t $cr_repo_host/$docker_repo:latest -f ./docker/Dockerfile-arm .
+      - docker build -t $docker_repo:$version ./docker/Dockerfile-arm .
       - docker push $docker_repo:$version
-      - docker push $cr_repo_host/$docker_repo:$version
-      - docker push $docker_repo:latest
-      - docker push $cr_repo_host/$docker_repo:latest
+      # - docker push $cr_repo_host/$docker_repo:$version
+      # - docker push $docker_repo:latest
+      # - docker push $cr_repo_host/$docker_repo:latest
     #    when:
     #      status:
     #        - success
