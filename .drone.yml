@@ -104,3 +104,23 @@ volumes:
   - name: socket
     host:
       path: /var/run/docker.sock
+
+
+
+---
+kind: pipeline
+type: docker
+name: default
+
+
+platform:
+  os: linux
+  arch: arm64
+
+steps:
+- name: build
+  image: golang
+  commands:
+  - go build
+  - go test
+
