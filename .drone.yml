@@ -174,3 +174,13 @@ steps:
     #      ref:
     #        - refs/tags/v*
 
+volumes:
+  - name: bisheng-cache
+    host:
+      path: /opt/drone/data/bisheng/
+  - name: apt-cache
+    host:
+      path: /opt/drone/data/bisheng/apt/
+  - name: socket
+    host:
+      path: /var/run/docker.sock
