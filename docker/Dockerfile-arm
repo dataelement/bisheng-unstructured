@@ -1,0 +1,26 @@
+FROM uns-armv8-ubuntu-20-04:v1
+LABEL org.opencontainers.image.authors="Dataelem inc."
+
+ARG BISHENG_UNS_VER=0.0.2
+
+RUN cat /etc/apt/sources.list
+
+# Copy bins and configs
+RUN mkdir -p /opt/bisheng-unstructured/bin
+COPY ./docker/entrypoint.sh /opt/bisheng-unstructured/bin/
+COPY config /opt/bisheng-unstructured/
+
+
+WORKDIR /opt/bisheng-unstructured
+
+# Copy source code
+COPY ./src/ /opt/bisheng-unstructured/
+COPY ./requirements.txt /opt/bisheng-unstructured/
+
+# install requirements
+RUN python3 -m pip install --upgrade pip
+RUN pip install -r requirements.txt -i https://pypi.tuna.tsinghua.edu.cn/simple
+
+RUN apt-get clean &&  rm -rf /var/lib/apt/lists/* && rm -rf /root/.cache/pip
+
+CMD ["bash", "bin/entrypoint.sh"]
