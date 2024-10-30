@@ -112,15 +112,30 @@ kind: pipeline
 type: docker
 name: default
 
+clone:
+  disable: true
 
 platform:
   os: linux
   arch: arm64
 
 steps:
-- name: build
-  image: golang
-  commands:
-  - go build
-  - go test
+  - name: clone
+    image: alpine/git
+    pull: if-not-exists
+    environment:
+      http_proxy:
+        from_secret: PROXY
+      https_proxy:
+        from_secret: PROXY
+    commands:
+      - git config --global core.compression 0
+      - git clone https://github.com/dataelement/bisheng-unstructured.git .
+      - git checkout $DRONE_COMMIT
+
+  - name: build
+    image: golang
+    commands:
+    - go build
+    - go test
 
