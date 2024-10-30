@@ -164,7 +164,7 @@ steps:
       - docker login -u $docker_user -p $docker_password  # 登录私有镜像源
       # 推送amd的镜像到cr镜像仓库
       #- docker build -t $docker_repo:$version -t $docker_repo:latest -t $cr_repo_host/$docker_repo:$version -t $cr_repo_host/$docker_repo:latest -f ./docker/Dockerfile-arm .
-      - docker buildx build --load -t $docker_repo:$version -f ./docker/Dockerfile-arm .
+      - docker buildx build --load -t $docker_repo:v1 -f ./docker/Dockerfile-arm .
       - docker push $docker_repo:$version
       # - docker push $cr_repo_host/$docker_repo:$version
       # - docker push $docker_repo:latest
