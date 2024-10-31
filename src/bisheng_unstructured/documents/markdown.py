@@ -64,10 +64,12 @@ def transform_html_table_to_md(html_table_str, field_sep=" "):
         col_offset = 0  # 用于处理行合并，遍历的偏移
         for col_index, e in enumerate(tr.getchildren()):
             col_real_index = col_index + col_offset
-            if index in rowspan_data and col_real_index in rowspan_data[index]:
+            if index in rowspan_data:
                 # 表示这个单元格是合并的，需要补充合并的，再往下走
-                row.extend(rowspan_data[index][col_real_index])
-                col_offset += len(rowspan_data[index][col_real_index])
+                while col_real_index in rowspan_data[index]:
+                    row.extend(rowspan_data[index][col_real_index])
+                    col_offset += len(rowspan_data[index][col_real_index])
+                    col_real_index = col_index + col_offset
 
             texts = norm_texts(e.xpath(".//text()"))
             field_text = field_sep.join(texts)
@@ -84,8 +86,7 @@ def transform_html_table_to_md(html_table_str, field_sep=" "):
                     if (index + i) not in rowspan_data:
                         rowspan_data[index + i] = {}
                     # 行合并 列合并
-                    for j in range(colspan):
-                        rowspan_data[index + i][col_real_index] = inner_col
+                    rowspan_data[index + i][col_real_index] = inner_col
 
             row.extend(inner_col)
 
