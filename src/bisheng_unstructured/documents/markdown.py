@@ -1,8 +1,8 @@
 import re
 
+from loguru import logger
 import lxml
 from lxml import etree
-from lxml.builder import E
 from lxml.html.clean import Cleaner
 
 RE_MULTISPACE_INCLUDING_NEWLINES = re.compile(pattern=r"\s+", flags=re.DOTALL)
@@ -13,6 +13,7 @@ def norm_text(e):
 
 
 def markdown_table(rows):
+
     def _format_row(r):
         content = " | ".join(r)
         content = "| " + content + " |"
@@ -41,26 +42,52 @@ def markdown_table(rows):
     return "\n".join(content)
 
 
+def norm_texts(texts):
+    return [t for t in map(norm_text, texts) if t]
+
+
 def transform_html_table_to_md(html_table_str, field_sep=" "):
-    table_node = lxml.html.fromstring(html_table_str)
+    try:
+        table_node = lxml.html.fromstring(html_table_str)
+    except Exception as e:
+        logger.error("html table parse error: %s", e)
+        return dict(text="", html="", error=str(e))
     rows = []
     for thead_node in table_node.xpath(".//thead"):
-        row = []
-        texts = tuple(thead_node.xpath(".//th//text()"))
-        texts = list(map(norm_text, texts))
-        row = texts
-
+        row = norm_texts(thead_node.xpath(".//th//text()"))
         if row:
             rows.append(row)
 
-    for tr in table_node.xpath(".//tr"):
+    rowspan_data = {}  # 用于存储跨行单元格的数据
+    for index, tr in enumerate(table_node.xpath(".//tr")):
         row = []
-        for e in tr.getchildren():
-            texts = tuple(e.xpath(".//text()"))
-            texts = map(norm_text, texts)
-            texts = [t for t in texts if t]
+        col_offset = 0  # 用于处理行合并，遍历的偏移
+        for col_index, e in enumerate(tr.getchildren()):
+            col_real_index = col_index + col_offset
+            if index in rowspan_data and col_real_index in rowspan_data[index]:
+                # 表示这个单元格是合并的，需要补充合并的，再往下走
+                row.extend(rowspan_data[index][col_real_index])
+                col_offset += len(rowspan_data[index][col_real_index])
+
+            texts = norm_texts(e.xpath(".//text()"))
             field_text = field_sep.join(texts)
-            row.append(field_text)
+
+            colspan = int(e.get('colspan', 1))
+            rowspan = int(e.get('rowspan', 1))
+
+            inner_col = []
+            inner_col.extend([field_text] * colspan)
+            col_offset += colspan - 1  # 当有单元合并，补充offset
+
+            if rowspan > 1:
+                for i in range(1, rowspan):
+                    if (index + i) not in rowspan_data:
+                        rowspan_data[index + i] = {}
+                    # 行合并 列合并
+                    for j in range(colspan):
+                        rowspan_data[index + i][col_real_index] = inner_col
+
+            row.extend(inner_col)
 
         if row:
             rows.append(row)
