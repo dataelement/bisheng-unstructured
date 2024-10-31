@@ -21,6 +21,7 @@ class BlockInfo:
     layout_type: int = None  # 3: title 4: pragraph, 5: table
     html_text: str = None
     pages: List[int] = None  # record every rs item belong to which page
+    bbox_text: List[str] = None  # record every bbox relate to which text
 
 
 def find_xy(box):
