@@ -1,4 +1,4 @@
-FROM uns-armv8-ubuntu-20-04:v1
+FROM uns-armv8-ubuntu-20-04:v3
 LABEL org.opencontainers.image.authors="Dataelem inc."
 
 ARG BISHENG_UNS_VER=0.0.2
