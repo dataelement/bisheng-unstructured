@@ -128,7 +128,7 @@ class Text2PDF(object):
                 stderr=subprocess.PIPE,
                 stdout=subprocess.PIPE,
             )
-            exit_code = p.wait(timeout=timeout)
+            exit_code = p.wait(timeout=300)
             if exit_code != 0:
                 stdout, stderr = p.communicate()
                 raise Exception(
