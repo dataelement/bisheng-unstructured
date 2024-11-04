@@ -93,11 +93,11 @@ class Text2PDF(object):
               --lua-filter=/opt/pandoc/unnested-table.lua
               --template /opt/pandoc/pandoc-3.1.9/share/templates/default.latex
               {0}
-              -V mainfont="Alibaba PuHuiTi"
-              -V sansfont="Alibaba PuHuiTi"
+              -V mainfont="Alibaba PuHuiTi 3.0"
+              -V sansfont="Alibaba PuHuiTi 3.0"
               -V monofont="Adobe Heiti Std"
-              -V CJKmainfont="Alibaba PuHuiTi"
-              -V CJKsansfont="Alibaba PuHuiTi"
+              -V CJKmainfont="Alibaba PuHuiTi 3.0"
+              -V CJKsansfont="Alibaba PuHuiTi 3.0"
               -V CJKmonofont="Adobe Heiti Std"
         """
 
