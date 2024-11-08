@@ -94,8 +94,8 @@ class Pipeline(object):
                 pdf_model_params_temp = {
                     "layout_ep": f"http://{rt_ep}/v2/idp/elem_layout_v1/infer",
                     "cell_model_ep": f"http://{rt_ep}/v2/idp/elem_table_cell_detect_v1/infer",
-                    "rowcol_model_ep": f"http://{rt_ep}/v2/idp/elem_table_cell_detect_v1/infer",
-                    "table_model_ep": f"http://{rt_ep}/v2/idp/elem_table_detect_v1/infer",
+                    "rowcol_model_ep": f"http://{rt_ep}/v2/idp/elem_table_rowcol_detect_v1/infer",
+                    "table_model_ep": f"http://{rt_ep}/v2/idp/elem_table_multiclass_v1/infer",
                     "ocr_model_ep": f"http://{rt_ep}/v2/idp/idp_app/infer",
                 }
             else:
@@ -103,8 +103,8 @@ class Pipeline(object):
                     "layout_ep": f"http://{rt_ep}/v2.1/models/elem_layout_v1/infer",
                     "cell_model_ep": f"http://{rt_ep}/v2.1/models/elem_table_cell_detect_v1/infer",
                     "rowcol_model_ep":
-                    f"http://{rt_ep}/v2.1/models/elem_table_cell_detect_v1/infer",
-                    "table_model_ep": f"http://{rt_ep}/v2.1/models/elem_table_detect_v1/infer",
+                    f"http://{rt_ep}/v2.1/models/elem_table_rowcol_detect_v1/infer",
+                    "table_model_ep": f"http://{rt_ep}/v2.1/models/elem_table_multiclass_v1/infer",
                     "ocr_model_ep": f"http://{rt_ep}/v2.1/models/elem_ocr_collection_v3/infer",
                 }
             self.mode = "sdk"
