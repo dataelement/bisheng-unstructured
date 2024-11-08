@@ -184,8 +184,7 @@ steps:
       https_proxy:
         from_secret: PROXY
       no_proxy: 192.168.106.8,192.168.106.8
-      #version: ${DRONE_TAG}
-      version: v0.1
+      version: ${DRONE_TAG}
       docker_repo: dataelement/bisheng-unstructured-arm
       docker_user:
         from_secret: DOCKER_USER
