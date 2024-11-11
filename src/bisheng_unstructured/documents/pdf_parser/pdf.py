@@ -582,6 +582,7 @@ class PDFDocument(Document):
         TEXT_ID = 4
         TABLE_ID = 5
         IMAGE_ID = 2
+        LAYOUT_ID = 6
         FORMULA_ID = 1000
 
         timer = Timer()
@@ -924,6 +925,10 @@ class PDFDocument(Document):
             label = b.layout_type
             if label == TABLE_ID:
                 filtered_blocks.append(b)
+
+            # elif label == LAYOUT_ID:
+            #     b.block_text = join_lines(b.ts, False, lang)
+            #     filtered_blocks.append(b)
 
             elif label == IMAGE_ID:
                 if self.keep_text_in_image:
