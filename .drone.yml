@@ -155,13 +155,19 @@ steps:
       version: release
       docker_repo: 192.168.106.8:6082/dataelement/bisheng-unstructured-arm
       docker_registry: http://192.168.106.8:6082
+      cr_user:
+        from_secret: CR_USER
+      cr_password:
+        from_secret: CR_PASSWORD
+      cr_repo_host: cr.dataelem.com
       docker_user:
         from_secret: NEXUS_USER
       docker_password:
         from_secret: NEXUS_PASSWORD
     commands:
       - docker login -u $docker_user -p $docker_password $docker_registry
-      - docker buildx build --push -t $docker_repo:$version -f ./docker/Dockerfile-arm .
+      - docker login -u $cr_user -p $cr_password $cr_repo_host  # 登录官方镜像源
+      - docker buildx build --push -t $cr_repo_host/$docker_repo:$version -t $docker_repo:$version -f ./docker/Dockerfile-arm .
     when:
       status:
         - success
