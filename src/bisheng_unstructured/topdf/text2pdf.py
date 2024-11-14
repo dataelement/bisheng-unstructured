@@ -144,6 +144,8 @@ class Text2PDF(object):
                 stderr=subprocess.PIPE,
                 stdout=subprocess.PIPE,
             )
+            if utils.get_architecture() == "ARM":
+                timeout = 3000
             exit_code = p.wait(timeout=timeout)
             if exit_code != 0:
                 stdout, stderr = p.communicate()
