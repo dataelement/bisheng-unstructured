@@ -142,6 +142,8 @@ steps:
     volumes: # 将容器内目录挂载到宿主机，仓库需要开启Trusted设置
       - name: apt-cache
         path: /var/cache/apt/archives # 将应用打包好的Jar和执行脚本挂载出来
+      - name: apt-cache
+        path: /root/.cache/pip/
       - name: socket
         path: /var/run/docker.sock
     environment:
