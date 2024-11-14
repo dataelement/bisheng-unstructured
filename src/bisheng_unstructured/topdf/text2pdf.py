@@ -1,4 +1,5 @@
 import os
+from platform import platform
 import shutil
 import signal
 import subprocess
@@ -6,6 +7,7 @@ import tempfile
 from html import parser
 from typing import Tuple
 
+from bisheng_unstructured import utils
 import lxml.html
 import numpy as np
 from lxml import etree
@@ -93,13 +95,27 @@ class Text2PDF(object):
               --lua-filter=/opt/pandoc/unnested-table.lua
               --template /opt/pandoc/pandoc-3.1.9/share/templates/default.latex
               {0}
-              -V mainfont="Alibaba PuHuiTi 3.0"
-              -V sansfont="Alibaba PuHuiTi 3.0"
+              -V mainfont="Alibaba PuHuiTi"
+              -V sansfont="Alibaba PuHuiTi"
               -V monofont="Adobe Heiti Std"
-              -V CJKmainfont="Alibaba PuHuiTi 3.0"
-              -V CJKsansfont="Alibaba PuHuiTi 3.0"
+              -V CJKmainfont="Alibaba PuHuiTi"
+              -V CJKsansfont="Alibaba PuHuiTi"
               -V CJKmonofont="Adobe Heiti Std"
         """
+
+        if utils.get_architecture() == "ARM":
+            cmd_template = """
+            pandoc -o {1} --pdf-engine=xelatex
+                --lua-filter=/opt/pandoc/unnested-table.lua
+                --template /opt/pandoc/pandoc-3.1.9/share/templates/default.latex
+                {0}
+                -V mainfont="Alibaba PuHuiTi 3.0"
+                -V sansfont="Alibaba PuHuiTi 3.0"
+                -V monofont="Adobe Heiti Std"
+                -V CJKmainfont="Alibaba PuHuiTi 3.0"
+                -V CJKsansfont="Alibaba PuHuiTi 3.0"
+                -V CJKmonofont="Adobe Heiti Std"
+            """
 
         cmd_template2 = """
             soffice --headless -env:SingleAppInstance=\"false\" -env:UserInstallation=\"file://{1}\" --convert-to pdf --outdir \"{1}\" \"{0}\"
