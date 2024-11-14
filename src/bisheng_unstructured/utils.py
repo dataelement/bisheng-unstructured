@@ -2,6 +2,7 @@ import importlib
 import json
 from datetime import datetime
 from functools import wraps
+import platform
 from typing import Dict, List, Optional, Union
 
 DATE_FORMATS = ("%Y-%m-%d", "%Y-%m-%dT%H:%M:%S", "%Y-%m-%d+%H:%M:%S", "%Y-%m-%dT%H:%M:%S%z")
@@ -10,6 +11,15 @@ DATE_FORMATS = ("%Y-%m-%d", "%Y-%m-%dT%H:%M:%S", "%Y-%m-%d+%H:%M:%S", "%Y-%m-%dT
 def save_as_jsonl(data: List[Dict], filename: str) -> None:
     with open(filename, "w+") as output_file:
         output_file.writelines(json.dumps(datum) + "\n" for datum in data)
+
+def get_architecture():
+    machine = platform.machine()
+    if 'x86' in machine or 'i686' in machine or 'i386' in machine:
+        return "x86"
+    elif 'arm' in machine or 'aarch64' in machine:
+        return "ARM"
+    else:
+        return "x86"
 
 
 def read_from_jsonl(filename: str) -> List[Dict]:

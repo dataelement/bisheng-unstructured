@@ -926,9 +926,9 @@ class PDFDocument(Document):
             if label == TABLE_ID:
                 filtered_blocks.append(b)
 
-            if label == LAYOUT_ID:
-                b.block_text = join_lines(b.ts, False, lang)
-                filtered_blocks.append(b)
+            # elif label == LAYOUT_ID:
+            #     b.block_text = join_lines(b.ts, False, lang)
+            #     filtered_blocks.append(b)
 
             elif label == IMAGE_ID:
                 if self.keep_text_in_image:
