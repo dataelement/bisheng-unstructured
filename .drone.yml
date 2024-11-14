@@ -167,7 +167,7 @@ steps:
     commands:
       - docker login -u $docker_user -p $docker_password $docker_registry
       - docker login -u $cr_user -p $cr_password $cr_repo_host  # 登录官方镜像源
-      - docker buildx build --push -t $cr_repo_host/$docker_repo:$version -t $docker_repo:$version -f ./docker/Dockerfile-arm .
+      - docker buildx build --push -t $cr_repo_host/dataelement/bisheng-unstructured-arm:$version -t $docker_repo:$version -f ./docker/Dockerfile-arm .
     when:
       status:
         - success
