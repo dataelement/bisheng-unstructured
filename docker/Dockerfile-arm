@@ -4,6 +4,7 @@ LABEL org.opencontainers.image.authors="Dataelem inc."
 ARG BISHENG_UNS_VER=0.0.2
 
 RUN cat /etc/apt/sources.list
+RUN apt update && apt-get install poppler-utils -y
 
 # Copy bins and configs
 RUN mkdir -p /opt/bisheng-unstructured/bin

@@ -11,6 +11,7 @@ from typing import Any, List, Optional, Union
 import fitz as pymupdf
 import numpy as np
 #import pypdfium2
+from pdf2image import convert_from_path
 from PIL import Image, ImageOps
 
 from bisheng_unstructured.common import Timer
@@ -355,6 +356,7 @@ class PDFDocument(Document):
         with blob.as_bytes_io() as file_path:
             fitz_doc = pymupdf.open(file_path)
             #pdf_doc = pypdfium2.PdfDocument(file_path, autoclose=True)
+            pdf_doc = convert_from_path(file_path, dpi=200)
             max_page = fitz_doc.page_count - start
             n = self.n if self.n else max_page
             n = min(n, max_page)
@@ -387,7 +389,13 @@ class PDFDocument(Document):
                 #pil_image.save(img_byte_arr, format="PNG")
                 #bytes_img = img_byte_arr.getvalue()
                 #bytes_imgs.append(bytes_img)
-                print()
+                page = pdf_doc[idx]
+                img_byte_arr = io.BytesIO()
+                page.save(img_byte_arr, format='PNG')
+                img_byte_arr = img_byte_arr.getvalue()
+                bytes_imgs.append(img_byte_arr)
+                page_imgs.append(page)
+
 
             timer.toc()
             print("pdfium render image", timer.get())
