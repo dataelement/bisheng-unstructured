@@ -160,13 +160,13 @@ steps:
     commands:
       - docker login -u $docker_user -p $docker_password $docker_registry
       - docker buildx build --push -t $docker_repo:$version -f ./docker/Dockerfile-arm .
-    when:
-      status:
-        - success
-      branch:
-        - release
-      event:
-        - push
+    # when:
+    #   status:
+    #     - success
+    #   branch:
+    #     - release
+    #   event:
+    #     - push
 
 
   - name: build_docker

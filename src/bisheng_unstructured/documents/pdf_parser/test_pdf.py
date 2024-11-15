@@ -4,7 +4,7 @@ import io
 import cv2
 import fitz
 import numpy as np
-import pypdfium2
+#import pypdfium2
 from shapely import Polygon
 from shapely import box as Rect
 
@@ -259,8 +259,8 @@ def test_vis():
     with blob.as_bytes_io() as file_path:
         pages = fitz.open(file_path)
         print("pages", pages)
-        pdf_reader = pypdfium2.PdfDocument(file_path, autoclose=True)
-        image_blobs = get_image_blobs(pages, pdf_reader, n, start)
+        # pdf_reader = pypdfium2.PdfDocument(file_path, autoclose=True)
+        # image_blobs = get_image_blobs(pages, pdf_reader, n, start)
 
     assert len(image_blobs) == n
 
