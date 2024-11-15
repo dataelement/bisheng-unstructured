@@ -9,7 +9,7 @@ from copy import deepcopy
 from dataclasses import dataclass
 from typing import Any, List, Optional, Union
 
-from pdf2image import convert_from_path
+from pdf2image import convert_from_path,convert_from_bytes
 import fitz as pymupdf
 import numpy as np
 #import pypdfium2
@@ -1219,7 +1219,7 @@ class PDFDocument(Document):
         with blob.as_bytes_io() as file_path:
             fitz_doc = pymupdf.open(file_path)
             #pdf_doc = pypdfium2.PdfDocument(file_path, autoclose=True)
-            pdf_doc = convert_from_path(file_path, dpi=200)
+            pdf_doc = convert_from_bytes(file_path.read(), dpi=200)
             max_page = fitz_doc.page_count - start
             n = self.n if self.n else max_page
             n = min(n, max_page)
