@@ -18,7 +18,7 @@ RUN sh -c 'echo "deb https://mirrors.tuna.tsinghua.edu.cn/ubuntu/ focal main res
 RUN cat /etc/apt/sources.list
 # Install Poetry
 RUN apt-get update && apt-get install gcc g++ curl build-essential postgresql-server-dev-all -y
-RUN apt-get update && apt-get install procps -y
+RUN apt-get update && apt-get install procps poppler-utils -y
 # opencv
 RUN apt-get install -y libglib2.0-0 libsm6 libxrender1 libxext6 libgl1
 RUN curl -sSL https://install.python-poetry.org | python3 -
