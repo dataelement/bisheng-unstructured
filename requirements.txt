@@ -45,7 +45,7 @@ pdf2image==1.16.3
 pdfminer-six==20221105
 pdfplumber==0.10.2
 wheel==0.41.0
-pypdfium2==4.23.1
+#pypdfium2==4.23.1
 pypdf==4.3.0
 PyMuPDF==1.23.8
 opencv-python==4.8.0.76
