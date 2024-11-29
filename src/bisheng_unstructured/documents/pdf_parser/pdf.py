@@ -1293,11 +1293,11 @@ class PDFDocument(Document):
                 # 重新按页数顺序排序下输出的结果
                 all_blocks = [[] for _ in range(len(futures))]
                 for future in as_completed(futures):
-                    blocks, idx = future.result()
+                    blocks, i = future.result()
                     if not blocks:
                         continue
-                    logger.info("load_layout_result_end idx={} time={}", idx, timer.get())
-                    all_blocks[idx] = [idx, blocks]
+                    logger.info("load_layout_result_end idx={} time={}", i, timer.get())
+                    all_blocks[i] = [i, blocks]
 
                 # 重新排序下输出的结果
                 for one in all_blocks:

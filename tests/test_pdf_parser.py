@@ -22,8 +22,8 @@ def test_pdf_doc():
         "table_model_ep": table_model_ep,
     }
 
-    filename = "examples/docs/模糊+水印-租赁物清单-20231213142249768106738.pdf"
-    pdf_doc = PDFDocument(file=filename, model_params=model_params, n=2,scale=2)
+    filename = "/mnt/c/Users/wkjob/D/WorkFiles/study/ChatGpt/bisheng/src/bisheng-unstructured/tests/BSJMZIT094-2024B 科研项目管理办法（2024版）V1(1).pdf"
+    pdf_doc = PDFDocument(file=filename, model_params=model_params, start=3,n=1,scale=1)
     pages = pdf_doc.pages
     elements = pdf_doc.elements
 
@@ -276,9 +276,11 @@ def test_pdf_doc10():
 # test_pdf_doc5()
 # test_pdf_doc6()
 
-test_pdf_doc7()
+# test_pdf_doc7()
 # test_pdf_doc8()
 # test_pdf_doc9()
 # test_regress()
 
 # test_pdf_doc10()
+test_pdf_doc()
+test_pdf_doc()
