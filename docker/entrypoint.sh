@@ -1,11 +1,5 @@
 #!/bin/bash
 
-
-unset http_proxy
-unset https_proxy
-unset HTTP_PROXY
-unset HTTPS_PROXY
-
 export PATH=/opt/texlive/2023/bin/x86_64-linux:$PATH
 export MANPATH=/opt/texlive/2023/texmf-dist/doc/man:$MANPATH
 export INFOPATH=/opt/texlive/2023/texmf-dist/doc/info:$INFOPATH

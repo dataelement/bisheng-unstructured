@@ -75,7 +75,3 @@ class InterceptHandler(logging.Handler):
 # 将标准库的日志记录发送到上面定义的处理程序
 log_level_value = getattr(logging, "DEBUG", logging.INFO)
 logging.basicConfig(handlers=[InterceptHandler()], level=log_level_value)
-
-# # 设置所有导入模块的日志级别
-# for name in list(sys.modules.keys()):
-#     logging.getLogger(name).setLevel(logging.DEBUG)

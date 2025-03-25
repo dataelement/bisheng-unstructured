@@ -4,6 +4,7 @@ import signal
 import subprocess
 
 from bisheng_unstructured import utils
+from bisheng_unstructured.config.settings import settings
 from bisheng_unstructured.partition.common import convert_office_doc
 
 
@@ -29,6 +30,7 @@ class DocxToPDF(object):
                 -V CJKsansfont="Alibaba PuHuiTi 3.0"
                 -V CJKmonofont="Cascadia Mono"
             """
+
         def _norm_cmd(cmd):
             return " ".join([p.strip() for p in cmd.strip().split()])
 
@@ -85,7 +87,7 @@ class DocxToPDFV1(object):
                 stderr=subprocess.PIPE,
                 stdout=subprocess.PIPE,
             )
-            exit_code = p.wait(timeout=300)
+            exit_code = p.wait(timeout=settings.topdf.timeout)
             if exit_code != 0:
                 stdout, stderr = p.communicate()
                 raise Exception(

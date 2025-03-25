@@ -1,17 +1,17 @@
 import os
-from platform import platform
 import shutil
 import signal
 import subprocess
-import tempfile
 from html import parser
 from typing import Tuple
 
-from bisheng_unstructured import utils
 import lxml.html
 import numpy as np
 from lxml import etree
 from lxml.html.clean import Cleaner
+
+from bisheng_unstructured import utils
+from bisheng_unstructured.config.settings import settings
 
 
 def clean_html(ori_file, new_file):
@@ -135,7 +135,7 @@ class Text2PDF(object):
         self.cmd_template3 = _norm_cmd(cmd_template3)
 
     @staticmethod
-    def run(cmd: str, timeout: int = 30):
+    def run(cmd: str):
         try:
             p = subprocess.Popen(
                 cmd,
@@ -144,9 +144,7 @@ class Text2PDF(object):
                 stderr=subprocess.PIPE,
                 stdout=subprocess.PIPE,
             )
-            if utils.get_architecture() == "ARM":
-                timeout = 3000
-            exit_code = p.wait(timeout=timeout)
+            exit_code = p.wait(timeout=settings.topdf.timeout)
             if exit_code != 0:
                 stdout, stderr = p.communicate()
                 raise Exception(
@@ -184,7 +182,7 @@ class Text2PDF(object):
             # 用wkhtmltopdf去转换html文件
             cmd = self.cmd_template3.format(input_file, output_file)
             try:
-                Text2PDF.run(cmd, timeout=30)
+                Text2PDF.run(cmd)
             except Exception as e:
                 # 不存在对应的pdf文件才算真正的失败
                 if not os.path.exists(output_file):

@@ -6,6 +6,8 @@ import tempfile
 
 import openpyxl
 
+from bisheng_unstructured.config.settings import settings
+
 
 class ExcelToPDF(object):
     def __init__(self, kwargs={}):
@@ -40,7 +42,7 @@ class ExcelToPDF(object):
                 stderr=subprocess.PIPE,
                 stdout=subprocess.PIPE,
             )
-            exit_code = p.wait(timeout=30)
+            exit_code = p.wait(timeout=settings.topdf.timeout)
             if exit_code != 0:
                 stdout, stderr = p.communicate()
                 raise Exception(

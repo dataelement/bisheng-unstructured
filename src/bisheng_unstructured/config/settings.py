@@ -10,7 +10,7 @@ from pydantic import BaseModel, BaseSettings, Field, validator
 class LoggerConf(BaseModel):
     level: str = "INFO"
     format: str = "[%(asctime)s][%(levelname)s] %(message)s"
-    handlers: List[Dict] = []
+    handlers: List[Dict] = Field(default_factory=list)
 
     @classmethod
     def parse_logger_sink(cls, sink: str) -> str:
@@ -34,23 +34,13 @@ class LoggerConf(BaseModel):
         return value
 
 
-class PdfModelParams(BaseModel):
-    layout_ep: Optional[str]
-    cell_model_ep: Optional[str]
-    rowcol_model_ep: Optional[str]
-    table_model_ep: Optional[str]
-    ocr_model_ep: Optional[str]
-
-
-class OcrConf(BaseModel):
-    params: Optional[Dict]
-    scene_mapping: Optional[Dict]
+class TopdfConf(BaseModel):
+    timeout: int = Field(default=30)
 
 
 class Settings(BaseSettings):
-    logger_conf: LoggerConf = LoggerConf()
-    pdf_model_params: PdfModelParams = PdfModelParams()
-    ocr_conf: OcrConf = OcrConf()
+    logger_conf: LoggerConf = Field(default_factory=LoggerConf)
+    topdf: TopdfConf = Field(default_factory=TopdfConf)
     is_all_ocr: bool = Field(default=False)
 
 
