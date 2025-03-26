@@ -1,6 +1,6 @@
 import os
 import re
-from typing import Dict, List, Optional
+from typing import Dict, List
 
 import yaml
 from loguru import logger
@@ -38,10 +38,18 @@ class TopdfConf(BaseModel):
     timeout: int = Field(default=30)
 
 
+class Etl4lmConf(BaseModel):
+    url: str = None
+    timeout: int = Field(default=30)
+    force_ocr: bool = Field(default=False)
+    enable_formula: bool = Field(default=True)
+    ocr_sdk_url: str = None
+
+
 class Settings(BaseSettings):
     logger_conf: LoggerConf = Field(default_factory=LoggerConf)
     topdf: TopdfConf = Field(default_factory=TopdfConf)
-    is_all_ocr: bool = Field(default=False)
+    etl4lm: Etl4lmConf = Field(default_factory=Etl4lmConf)
 
 
 def load_settings_from_yaml(file_path: str) -> Settings:

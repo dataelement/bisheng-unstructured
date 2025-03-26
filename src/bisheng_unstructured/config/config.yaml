@@ -23,5 +23,14 @@ topdf:
   # topdf 指令超时时间
   timeout: 60
 
-# ocr 服务相关配置
-is_all_ocr: false
+etl4lm:
+  # 文档解析模型服务配置，包括OCR、版式分析、表格识别、公式识别等
+  url: "http://ocr:5000/ocr"
+  # ocr 请求ocr服务超时时间
+  timeout: 60
+  # 是否开启公式识别
+  enable_formula: true
+  # # 是否强制使用OCR，false则由系统判断是否进行OCR识别，true则强制转成图片走OCR识别（适用于图文混合且需要识别图片中文字的场景）
+  force_ocr: false
+  # OCR SDK服务地址，默认为空则使用ETL4LM自带的轻量OCR模型（速度快，对于困难场景效果一般），若填写OCR SDK服务地址则使用高精度的OCR模型。
+  ocr_sdk_url: ''

@@ -1,14 +1,14 @@
 from typing import Any, Dict, List, Optional, Union
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 
 class UnstructuredInput(BaseModel):
     filename: str
     url: Optional[str] = None
     b64_data: Optional[List[str]] = None
-    parameters: Optional[Dict] = {}
-    mode: str = "text"  # text, partition, vis, topdf
+    parameters: Optional[Dict] = Field(default_factory=dict)
+    mode: str = "text"  # text, partition, topdf
     file_path: Optional[str] = None
     file_type: Optional[str] = None
     is_scan: Optional[bool] = None
@@ -19,7 +19,7 @@ class UnstructuredOutput(BaseModel):
     status_message: str = "success"
     text: Optional[str] = None
     html_text: Optional[str] = None
-    partitions: List[Dict[str, Any]] = []
+    partitions: List[Dict[str, Any]] = Field(default_factory=list)
     b64_pdf: Optional[str] = None
 
 

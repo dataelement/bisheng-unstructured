@@ -104,6 +104,7 @@ async def etl4_llm(inp: UnstructuredInput):
             logger.info(f"local_pipeline mode=[{inp.mode}] filename=[{inp.filename}]")
             inp.mode = "text"
 
+        old_file_type = inp.file_type
         if inp.file_type != "pdf" and inp.mode == "partition":
             # partition 模式，转pdf 后处理
             inp.mode = "topdf"
@@ -118,7 +119,7 @@ async def etl4_llm(inp: UnstructuredInput):
 
         timer.toc()
         outp = pipeline.predict(inp)
-        if inp.mode == "partition" and outp.status_code == 200:
+        if inp.mode == "partition" and outp.status_code == 200 and old_file_type != "pdf":
             with open(file_path, "rb") as fin:
                 outp.b64_pdf = base64.b64encode(fin.read()).decode("utf-8")
 
