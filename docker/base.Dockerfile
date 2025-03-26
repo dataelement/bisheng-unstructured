@@ -1,8 +1,9 @@
 FROM ubuntu:20.04
 
+ARG PANDOC_ARCH=amd64
 # 设置环境变量以避免交互式安装时的提示
 ENV DEBIAN_FRONTEND=noninteractive
-ENV PANDOC_ARCH="amd64"
+ENV PANDOC_ARCH=$PANDOC_ARCH
 
 RUN apt-get update && apt-get install -y \
     libglib2.0-0 \
@@ -26,8 +27,8 @@ RUN apt-get update && apt-get install -y \
 
 WORKDIR /app
 
-RUN wget https://github.com/jgm/pandoc/releases/download/3.1.9/pandoc-3.1.9-linux-{$PANDOC_ARCH}.tar.gz \
-  && tar xvf pandoc-3.1.9-linux-"${PANDOC_ARCH}".tar.gz \
+RUN wget https://github.com/jgm/pandoc/releases/download/3.1.9/pandoc-3.1.9-linux-${PANDOC_ARCH}.tar.gz \
+  && tar xvf pandoc-3.1.9-linux-${PANDOC_ARCH}.tar.gz \
   && cd pandoc-3.1.9 \
   && cp bin/pandoc /usr/bin/ \
   && cd ..
