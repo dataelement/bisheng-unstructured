@@ -22,11 +22,20 @@ RUN apt-get update && apt-get install -y \
     xfonts-base \
     xfonts-75dpi \
     software-properties-common \
+    texlive-full \
     && add-apt-repository ppa:deadsnakes/ppa -y \
     && apt-get update
 
-WORKDIR /app
+WORKDIR /opt
 
+# Install fonts
+RUN wget wget -d --header="User-Agent: Mozilla/5.0 (Windows NT 6.0) AppleWebKit/537.11 (KHTML, like Gecko) Chrome/23.0.1271.97 Safari/537.11" --header="Referer: https://www.alibabafonts.com" https://fonts.alibabadesign.com/AlibabaPuHuiTi-3.zip \
+    && unzip AlibabaPuHuiTi-3.zip \
+    && mkdir -p /usr/share/fonts/truetype/alibaba \
+    && find AlibabaPuHuiTi-3 -type f|grep ttf | xargs -I {} mv {} /usr/share/fonts/truetype/alibaba/ \
+    && fc-cache -f -v
+
+# Install pandoc
 RUN wget https://github.com/jgm/pandoc/releases/download/3.1.9/pandoc-3.1.9-linux-${PANDOC_ARCH}.tar.gz \
   && tar xvf pandoc-3.1.9-linux-${PANDOC_ARCH}.tar.gz \
   && cd pandoc-3.1.9 \
@@ -34,8 +43,8 @@ RUN wget https://github.com/jgm/pandoc/releases/download/3.1.9/pandoc-3.1.9-linu
   && cd ..
 
 # Install wkhtmltopdf
-RUN wget https://github.com/wkhtmltopdf/packaging/releases/download/0.12.6-1/wkhtmltox_0.12.6-1.focal_amd64.deb && \
-    dpkg -i wkhtmltox_0.12.6-1.focal_amd64.deb
+RUN wget https://github.com/wkhtmltopdf/packaging/releases/download/0.12.6-1/wkhtmltox_0.12.6-1.focal_${PANDOC_ARCH}.deb && \
+    dpkg -i wkhtmltox_0.12.6-1.focal_${PANDOC_ARCH}.deb
 
 # Install Python3.10
 RUN apt-get install -y \
