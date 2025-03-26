@@ -36,11 +36,15 @@ RUN wget wget -d --header="User-Agent: Mozilla/5.0 (Windows NT 6.0) AppleWebKit/
     && fc-cache -f -v
 
 # Install pandoc
-RUN wget https://github.com/jgm/pandoc/releases/download/3.1.9/pandoc-3.1.9-linux-${PANDOC_ARCH}.tar.gz \
-  && tar xvf pandoc-3.1.9-linux-${PANDOC_ARCH}.tar.gz \
-  && cd pandoc-3.1.9 \
-  && cp bin/pandoc /usr/bin/ \
-  && cd ..
+RUN mkdir -p /opt/pandoc \
+    && cd /opt/pandoc \
+    && wget https://github.com/jgm/pandoc/releases/download/3.1.9/pandoc-3.1.9-linux-${PANDOC_ARCH}.tar.gz \
+    && tar xvf pandoc-3.1.9-linux-${PANDOC_ARCH}.tar.gz \
+    && cd pandoc-3.1.9 \
+    && cp bin/pandoc /usr/bin/ \
+    && cd ..
+
+COPY ./docker/unnested-table.lua /opt/pandoc/
 
 # Install wkhtmltopdf
 RUN wget https://github.com/wkhtmltopdf/packaging/releases/download/0.12.6-1/wkhtmltox_0.12.6-1.focal_${PANDOC_ARCH}.deb && \
