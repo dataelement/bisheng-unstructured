@@ -6,6 +6,7 @@ ENV DEBIAN_FRONTEND=noninteractive
 ENV PANDOC_ARCH=$PANDOC_ARCH
 
 RUN apt-get update && apt-get install -y \
+    fontconfig \
     libglib2.0-0 \
     libsm6 \
     libxrender1 \
