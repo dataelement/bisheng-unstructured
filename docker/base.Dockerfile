@@ -7,6 +7,7 @@ ENV PANDOC_ARCH=$PANDOC_ARCH
 
 RUN apt-get update && apt-get install -y \
     fontconfig \
+    vim \
     libglib2.0-0 \
     libsm6 \
     libxrender1 \
@@ -22,6 +23,8 @@ RUN apt-get update && apt-get install -y \
     xfonts-encodings \
     xfonts-base \
     xfonts-75dpi \
+    texlive-base \
+    texlive-xetex \
     software-properties-common \
     && add-apt-repository ppa:deadsnakes/ppa -y \
     && apt-get update

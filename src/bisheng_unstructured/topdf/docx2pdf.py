@@ -12,24 +12,10 @@ class DocxToPDF(object):
     def __init__(self, kwargs={}):
         cmd_template = """
           pandoc -o {1} --pdf-engine=xelatex {0}
-              -V mainfont="Alibaba PuHuiTi"
-              -V sansfont="Alibaba PuHuiTi"
-              -V monofont="Cascadia Mono"
-              -V CJKmainfont="Alibaba PuHuiTi"
-              -V CJKsansfont="Alibaba PuHuiTi"
-              -V CJKmonofont="Cascadia Mono"
+              -V mainfont="Alibaba PuHuiTi 3.0"
+              -V sansfont="Alibaba PuHuiTi 3.0"
+              -V monofont="Alibaba PuHuiTi 3.0"
         """
-
-        if utils.get_architecture() == "ARM":
-            cmd_template = """
-            pandoc -o {1} --pdf-engine=xelatex {0}
-                -V mainfont="Alibaba PuHuiTi 3.0"
-                -V sansfont="Alibaba PuHuiTi 3.0"
-                -V monofont="Cascadia Mono"
-                -V CJKmainfont="Alibaba PuHuiTi 3.0"
-                -V CJKsansfont="Alibaba PuHuiTi 3.0"
-                -V CJKmonofont="Cascadia Mono"
-            """
 
         def _norm_cmd(cmd):
             return " ".join([p.strip() for p in cmd.strip().split()])
