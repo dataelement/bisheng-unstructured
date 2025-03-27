@@ -29,7 +29,7 @@ RUN apt-get update && apt-get install -y \
 WORKDIR /opt
 
 # Install fonts
-RUN wget wget -d --header="User-Agent: Mozilla/5.0 (Windows NT 6.0) AppleWebKit/537.11 (KHTML, like Gecko) Chrome/23.0.1271.97 Safari/537.11" --header="Referer: https://www.alibabafonts.com" https://fonts.alibabadesign.com/AlibabaPuHuiTi-3.zip \
+RUN wget -d --header="Referer: https://www.alibabafonts.com" https://fonts.alibabadesign.com/AlibabaPuHuiTi-3.zip \
     && unzip AlibabaPuHuiTi-3.zip \
     && mkdir -p /usr/share/fonts/truetype/alibaba \
     && find AlibabaPuHuiTi-3 -type f|grep ttf | xargs -I {} mv {} /usr/share/fonts/truetype/alibaba/ \
