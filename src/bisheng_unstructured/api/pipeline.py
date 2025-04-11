@@ -169,6 +169,9 @@ class Pipeline(object):
             elif mode == "vis":
                 html_text = visualize_html(elements)
                 result = UnstructuredOutput(html_text=html_text)
+            elif mode == "local_partition":
+                text = save_to_txt(elements)
+                result = UnstructuredOutput(text=text)
 
             return result
         except Exception as e:
