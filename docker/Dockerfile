@@ -21,7 +21,7 @@ RUN apt-get update && apt-get install gcc g++ curl build-essential postgresql-se
 RUN apt-get update && apt-get install procps poppler-utils -y
 # opencv
 RUN apt-get install -y libglib2.0-0 libsm6 libxrender1 libxext6 libgl1
-RUN curl -sSL https://install.python-poetry.org | python3 -
+RUN curl -sSL https://install.python-poetry.org | python3 - --version 1.8.2
 # # Add Poetry to PATH
 ENV PATH="${PATH}:/root/.local/bin"
 
