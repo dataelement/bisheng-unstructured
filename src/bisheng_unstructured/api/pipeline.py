@@ -34,8 +34,9 @@ def partition_pdf(filename, model_params, **kwargs):
             reader = pypdf.PdfReader(pdf_file_obj)
             # 遍历每一页
             return [
-                NarrativeText(text=page.extract_text(),
-                              metadata=ElementMetadata(page_number=page_num))
+                NarrativeText(
+                    text=page.extract_text(), metadata=ElementMetadata(page_number=page_num)
+                )
                 for page_num, page in enumerate(reader.pages)
             ]
     else:
@@ -83,7 +84,6 @@ PARTITION_MAP = {
 
 
 class Pipeline(object):
-
     def __init__(self, settings: Dict):
         """k8s 使用cm 创建环境变量"""
         tmp_dict = settings
@@ -102,8 +102,7 @@ class Pipeline(object):
                 pdf_model_params_temp = {
                     "layout_ep": f"http://{rt_ep}/v2.1/models/elem_layout_v1/infer",
                     "cell_model_ep": f"http://{rt_ep}/v2.1/models/elem_table_cell_detect_v1/infer",
-                    "rowcol_model_ep":
-                    f"http://{rt_ep}/v2.1/models/elem_table_rowcol_detect_v1/infer",
+                    "rowcol_model_ep": f"http://{rt_ep}/v2.1/models/elem_table_rowcol_detect_v1/infer",
                     "table_model_ep": f"http://{rt_ep}/v2.1/models/elem_table_multiclass_v1/infer",
                     "ocr_model_ep": f"http://{rt_ep}/v2.1/models/elem_ocr_collection_v3/infer",
                 }
@@ -153,7 +152,7 @@ class Pipeline(object):
         }
         part_func = PARTITION_MAP.get(file_type)
         if part_func == partition_image and self.mode == "local":
-            return UnstructuredOutput(status_code=400, status_message="本地模型不支持图片")
+            return UnstructuredOutput(partitions=[], status_message="本地模型不支持图片")
 
         if part_func == partition_pdf or part_func == partition_image:
             part_inp.update({"model_params": self.pdf_model_params})

@@ -9,11 +9,12 @@ from copy import deepcopy
 from dataclasses import dataclass
 from typing import Any, List, Optional, Union
 
-from pdf2image import convert_from_path,convert_from_bytes
 import fitz as pymupdf
 import numpy as np
-#import pypdfium2
+
+# import pypdfium2
 from loguru import logger
+from pdf2image import convert_from_bytes, convert_from_path
 from PIL import Image, ImageOps
 from shapely import Polygon
 from shapely import box as Rect
@@ -992,6 +993,8 @@ class PDFDocument(Document):
         return groups
 
     def _allocate_continuous(self, groups, lang):
+        if not groups:
+            return groups
         g_bound = []
         groups = [g for g in groups if g]
         for blocks in groups:
@@ -1218,7 +1221,7 @@ class PDFDocument(Document):
 
         with blob.as_bytes_io() as file_path:
             fitz_doc = pymupdf.open(file_path)
-            #pdf_doc = pypdfium2.PdfDocument(file_path, autoclose=True)
+            # pdf_doc = pypdfium2.PdfDocument(file_path, autoclose=True)
             pdf_doc = convert_from_bytes(file_path.read(), dpi=72)
             max_page = fitz_doc.page_count - start
             n = self.n if self.n else max_page
@@ -1231,20 +1234,19 @@ class PDFDocument(Document):
             bytes_imgs = []
             page_imgs = []
             for idx in range(start, start + n):
-                #page = pdf_doc.get_page(idx)
-                #pil_image = page.render().to_pil()
-                #page_imgs.append(pil_image)
-                #img_byte_arr = io.BytesIO()
-                #pil_image.save(img_byte_arr, format="PNG")
-                #bytes_img = img_byte_arr.getvalue()
-                #bytes_imgs.append(bytes_img)
+                # page = pdf_doc.get_page(idx)
+                # pil_image = page.render().to_pil()
+                # page_imgs.append(pil_image)
+                # img_byte_arr = io.BytesIO()
+                # pil_image.save(img_byte_arr, format="PNG")
+                # bytes_img = img_byte_arr.getvalue()
+                # bytes_imgs.append(bytes_img)
                 page = pdf_doc[idx]
                 img_byte_arr = io.BytesIO()
-                page.save(img_byte_arr, format='PNG')
+                page.save(img_byte_arr, format="PNG")
                 img_byte_arr = img_byte_arr.getvalue()
                 bytes_imgs.append(img_byte_arr)
                 page_imgs.append(page)
-
 
             timer.toc()
             logger.info("pdfium render image size={} time={}", len(page_imgs), timer.get())
